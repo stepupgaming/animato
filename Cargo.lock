@@ -73,6 +73,7 @@ dependencies = [
  "animato-macro",
  "animato-path",
  "animato-physics",
+ "animato-procgen",
  "animato-spring",
  "animato-timeline",
  "animato-tween",
@@ -250,6 +251,15 @@ dependencies = [
 
 [[package]]
 name = "animato-physics"
+version = "1.7.2"
+dependencies = [
+ "animato-core",
+ "libm",
+ "serde",
+]
+
+[[package]]
+name = "animato-procgen"
 version = "1.7.2"
 dependencies = [
  "animato-core",

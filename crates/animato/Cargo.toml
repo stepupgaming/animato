@@ -47,6 +47,7 @@ devtools-egui-panel = ["devtools", "animato-devtools/egui-panel"]
 devtools-tui-panel = ["devtools", "animato-devtools/tui-panel"]
 macro = ["dep:animato-macro"]
 composition = ["dep:animato-composition"]
+procgen = ["dep:animato-procgen"]
 tokio    = ["timeline", "animato-timeline/tokio"]
 serde    = [
     "dep:serde",
@@ -78,6 +79,7 @@ animato-js       = { workspace = true, optional = true }
 animato-devtools = { workspace = true, optional = true }
 animato-macro    = { workspace = true, optional = true }
 animato-composition = { workspace = true, optional = true }
+animato-procgen = { workspace = true, optional = true }
 palette          = { workspace = true, optional = true }
 serde            = { workspace = true, optional = true }
 

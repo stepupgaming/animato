@@ -1,0 +1,22 @@
+[package]
+name        = "animato-procgen"
+description = "Optional procedural-geometry edge crate for Animato: Delaunay, Voronoi, Lloyd relaxation, Poisson-disk sampling, Worley noise, and a starter caustics field."
+readme.workspace  = true
+version.workspace     = true
+edition.workspace     = true
+license.workspace     = true
+repository.workspace  = true
+authors.workspace     = true
+rust-version.workspace = true
+keywords    = ["procedural", "voronoi", "delaunay", "noise", "generative"]
+categories  = ["graphics", "game-development", "mathematics"]
+
+[features]
+default = ["std"]
+std     = ["animato-core/std"]
+serde   = ["dep:serde", "animato-core/serde"]
+
+[dependencies]
+animato-core = { workspace = true }
+libm         = "0.2"
+serde        = { workspace = true, optional = true }

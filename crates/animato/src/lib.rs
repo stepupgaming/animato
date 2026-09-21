@@ -96,6 +96,7 @@
 //! | `devtools` | Timeline inspector, easing editor, spring visualizer, recorder controls, perf monitor |
 //! | `macro` | Declarative `animato!{}` Motion Macro DSL |
 //! | `composition` | [`Composition`], [`Track`], [`Clip`] seekable track/clip composition |
+//! | `procgen` | Procedural-geometry edge crate: Delaunay, Voronoi, Lloyd, Poisson-disk, Worley, starter caustics |
 //! | `tokio` | [`Timeline::wait()`] async completion waiting |
 //! | `serde` | `Serialize`/`Deserialize` on all public types |
 
@@ -253,6 +254,14 @@ pub use animato_macro::{animato, keyframes, motion, preset, spring, timeline, tw
 #[cfg(feature = "composition")]
 pub use animato_composition::{Clip, Composition, Track};
 
+// ── Procgen (optional edge crate; defaults unchanged) ────────────────────────
+#[cfg(feature = "procgen")]
+pub use animato_procgen::{
+    Bounds, CausticField, Point as ProcgenPoint, SmallRng, VoronoiCell, WorleyField,
+    lloyd_relax, poisson_disk, polygon_area, polygon_centroid, signed_area2, triangulate,
+    voronoi,
+};
+
 /// Prelude module with macro-friendly re-exports.
 ///
 /// Import everything for ergonomic macro usage:
@@ -312,4 +321,10 @@ pub mod prelude {
 
     #[cfg(feature = "composition")]
     pub use crate::{Clip, Composition, Track};
+
+    #[cfg(feature = "procgen")]
+    pub use crate::{
+        Bounds, CausticField, ProcgenPoint, SmallRng, VoronoiCell, WorleyField, lloyd_relax,
+        poisson_disk, polygon_area, polygon_centroid, signed_area2, triangulate, voronoi,
+    };
 }
