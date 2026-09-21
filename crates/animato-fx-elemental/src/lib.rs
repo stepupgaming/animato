@@ -72,4 +72,5 @@ pub mod gpu;
 pub use aim::{AimSolution, solve_aim};
 pub use params::{FrostLanceParams, IMPACT_FRACTION, MAX_SPIKES};
 pub use pipeline::{FrostEvent, FrostLance, FrostLight, Phase, SpawnError, SEEK_STEP};
+pub use rng::FxRng;
 pub use spike::{SpikeRecord, SpikeSample, roll_spikes};

@@ -7,7 +7,7 @@
 //! in this module, so param edits re-shape a standing field with the clock
 //! stopped.
 
-use crate::math::{lerp, out_quint, saturate, smoothstep};
+use crate::math::{in_cubic, lerp, out_quint, saturate, smoothstep};
 use crate::params::FrostLanceParams;
 use crate::rng::FxRng;
 
@@ -240,13 +240,16 @@ pub fn sample_spike(
     } else {
         lateral_norm(record, params)
     };
-    let _lean_mix = 0.75 + outward * 0.85; // directional blend, kept for parity
-    let lean_angle =
-        params.lean * (0.35 + 0.65 * record.along) * (1.0 + record.lean_jitter * params.lean_jitter * params.randomness);
+    // Blend upright growth with outward lean (mirrors IceAbility.js lean mix).
+    let lean_mix = 0.75 + outward * 0.85;
+    let lean_angle = params.lean
+        * lean_mix
+        * (0.35 + 0.65 * record.along)
+        * (1.0 + record.lean_jitter * params.lean_jitter * params.randomness);
 
     let mut y_base = (emerge - 1.0) * height * 0.85;
     if retract > 0.0 {
-        let sink = in_cubic_f32(retract);
+        let sink = in_cubic(retract);
         y_base -= sink * (height + radius + 0.4);
     }
 
@@ -264,10 +267,6 @@ pub fn sample_spike(
     }
 }
 
-#[inline]
-fn in_cubic_f32(t: f32) -> f32 {
-    t * t * t
-}
 
 #[cfg(test)]
 mod tests {

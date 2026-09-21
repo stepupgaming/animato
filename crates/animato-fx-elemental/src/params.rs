@@ -98,7 +98,8 @@ pub struct FrostLanceParams {
 
     // ── the eruption ──
     /// Seconds from buried to full height.
-    pub rise_time: f32,    /// How far past full height the punch carries.
+    pub rise_time: f32,
+    /// How far past full height the punch carries.
     pub rise_overshoot: f32,
     /// Seconds of random delay between neighbours.
     pub rise_stagger: f32,
@@ -175,12 +176,12 @@ impl Default for FrostLanceParams {
 impl FrostLanceParams {
     /// How many spikes a cast spends: `clamp(round(spike_count * density), 1, 288)`.
     pub fn spike_budget(&self) -> usize {
-        (self.spike_count * self.density).round().clamp(1.0, MAX_SPIKES as f32) as usize
+        libm::roundf(self.spike_count * self.density).clamp(1.0, MAX_SPIKES as f32) as usize
     }
 
     /// How many of the budget are held back for the impact cluster.
     pub fn impact_count(&self, budget: usize) -> usize {
-        ((budget as f32) * IMPACT_FRACTION).round() as usize
+        libm::roundf((budget as f32) * IMPACT_FRACTION) as usize
     }
 
     /// Seconds the field stands once the front arrives (`max(0.2, lifetime)`).

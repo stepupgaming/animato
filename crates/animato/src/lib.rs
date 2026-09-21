@@ -266,8 +266,9 @@ pub use animato_procgen::{
 // ── Elemental FX (optional edge crate; defaults unchanged) ───────────────────
 #[cfg(any(feature = "fx-elemental", feature = "elemental"))]
 pub use animato_fx_elemental::{
-    AimSolution, FrostEvent, FrostLance, FrostLanceParams, FrostLight, Phase as FrostPhase,
-    SpawnError as FrostSpawnError, SpikeRecord, SpikeSample, solve_aim,
+    AimSolution, FrostEvent, FrostLance, FrostLanceParams, FrostLight, FxRng,
+    IMPACT_FRACTION, MAX_SPIKES, Phase as FrostPhase, SEEK_STEP,
+    SpawnError as FrostSpawnError, SpikeRecord, SpikeSample, roll_spikes, solve_aim,
 };
 
 /// Prelude module with macro-friendly re-exports.
@@ -285,11 +286,6 @@ pub use animato_fx_elemental::{
 /// };
 /// ```
 pub mod prelude {
-    pub use crate::{
-        Angle, Animatable, AnimationIntrospection, AnimationKind, Color, Easing, Inspectable,
-        Interpolate, Mat4, Playable, PlaybackState, Quaternion, Update,
-    };
-
     #[cfg(feature = "tween")]
     pub use crate::{
         GridOrigin, Keyframe, KeyframeTrack, Loop, StaggerPattern, Tween, TweenBuilder, TweenState,
@@ -339,6 +335,7 @@ pub mod prelude {
     #[cfg(any(feature = "fx-elemental", feature = "elemental"))]
     pub use crate::{
         AimSolution, FrostEvent, FrostLance, FrostLanceParams, FrostLight, FrostPhase,
-        FrostSpawnError, SpikeRecord, SpikeSample, solve_aim,
+        FrostSpawnError, FxRng, IMPACT_FRACTION, MAX_SPIKES, SEEK_STEP, SpikeRecord, SpikeSample,
+        roll_spikes, solve_aim,
     };
 }
