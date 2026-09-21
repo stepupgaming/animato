@@ -67,9 +67,12 @@ traits: it must land as an optional edge crate with unchanged defaults.
    renderer-agnostic Rust.
 4. **Follow-ups.** **Storm Lance (E)** is now in-crate (`StormLance` /
    `StormLanceParams` / `filament.rs` — ThunderAbility port with restrike
-   polylines). Remaining sandbox abilities (Cinder Fall, Nova Beam, Voltaic
-   Snare), Ext / Extended sandboxes, and a full `wgpu` renderer backend
-   (particles, decals, ice/lightning shading) are not started here.
+   polylines). **Cinder Fall (R)** is now in-crate (`CinderFall` /
+   `CinderFallParams` / `fissure.rs` — MeteorAbility port with ballistic arc,
+   chunk ballistics and molten fissures). Remaining sandbox abilities (Nova
+   Beam, Voltaic Snare), Ext / Extended sandboxes, and a full `wgpu` renderer
+   backend (particles, decals, ice/lightning/meteor shading) are not started
+   here.
 
 ## Consequences
 

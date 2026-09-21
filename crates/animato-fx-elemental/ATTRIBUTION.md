@@ -1,6 +1,6 @@
 # Attribution — elemental VFX source
 
-`animato-fx-elemental` ports the **Frost Lance (Q)** and **Storm Lance (E)** line-cast pipelines from:
+`animato-fx-elemental` ports the **Frost Lance (Q)**, **Storm Lance (E)** and **Cinder Fall (R)** line-cast pipelines from:
 
 - **Project:** [LinearAbiltyCastingThreeJS](https://github.com/achrefelouafi/LinearAbiltyCastingThreeJS)
   ("Elemental Sandbox" — a skillshot VFX sandbox built with Three.js, Vite
@@ -13,10 +13,11 @@
 Only the intangible structure, re-expressed in renderer-agnostic Rust:
 
 - the ability phase machine (`Ability.js`), Frost Lance eruption logic
-  (`IceAbility.js`) and Storm Lance filament / restrike logic
-  (`ThunderAbility.js` + `LightningMaterial.js`), timing curves and the
-  dice-only record rule;
-- the `ice` and `thunder` parameter-block defaults (`src/config/settings.js`);
+  (`IceAbility.js`), Storm Lance filament / restrike logic
+  (`ThunderAbility.js` + `LightningMaterial.js`), and Cinder Fall ballistic
+  arc / debris / fissure logic (`MeteorAbility.js` + `GroundFissures.js`),
+  timing curves and the dice-only record rule;
+- the `ice`, `thunder` and `meteor` parameter-block defaults (`src/config/settings.js`);
 - the aim-clamp / `minRange`-refusal rule (`src/input/AimController.js`);
 - the maths helpers (`src/utils/math.js`).
 

@@ -1,6 +1,6 @@
 [package]
 name        = "animato-fx-elemental"
-description = "Optional elemental-VFX edge crate for Animato: seekable Frost Lance + Storm Lance pipelines (Three.js/GLSL original by achrefelouafi, MIT). Pure Rust; no GPU required for tests."
+description = "Optional elemental-VFX edge crate for Animato: seekable Frost Lance + Storm Lance + Cinder Fall pipelines (Three.js/GLSL original by achrefelouafi, MIT). Pure Rust; no GPU required for tests."
 readme.workspace  = true
 version.workspace     = true
 edition.workspace     = true

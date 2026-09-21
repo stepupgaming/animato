@@ -7,17 +7,22 @@
 //! - [`FrostLance`] / [`FrostLanceParams`] — Frost Lance (Q) crystal field.
 //! - [`StormLance`] / [`StormLanceParams`] — Storm Lance (E) bolt filament
 //!   bundle with restrike (ThunderAbility port).
-//! - Time-driven: `seek_abs` re-simulates deterministically, so both pipelines
-//!   are drivable by `animato_composition::Composition` and
+//! - [`CinderFall`] / [`CinderFallParams`] — Cinder Fall (R) arced meteor with
+//!   impact debris and molten fissures (MeteorAbility port).
+//! - Time-driven: `seek_abs` re-simulates deterministically, so every pipeline
+//!   is drivable by `animato_composition::Composition` and
 //!   `animato_timeline::Timeline::seek_abs` — including while paused, with
 //!   params edited live (records store dice only; metres resolve at sample
 //!   time).
-//! - Both implement [`animato_core::Playable`] (`Send + 'static`).
+//! - All three implement [`animato_core::Playable`] (`Send + 'static`).
 //!
 //! ## Quick Start
 //!
 //! ```rust
-//! use animato_fx_elemental::{FrostLance, FrostLanceParams, StormLance, StormLanceParams};
+//! use animato_fx_elemental::{
+//!     CinderFall, CinderFallParams, FrostLance, FrostLanceParams, StormLance,
+//!     StormLanceParams,
+//! };
 //!
 //! let mut frost = FrostLance::with_params(FrostLanceParams::default());
 //! frost.cast([0.0, 0.0], [0.0, 1.0], 12.0, 7).unwrap();
@@ -28,6 +33,11 @@
 //! storm.cast([0.0, 0.0], [0.0, 1.0], 12.0, 7).unwrap();
 //! storm.seek_abs(0.3);
 //! assert!(!storm.samples().is_empty());
+//!
+//! let mut cinder = CinderFall::with_params(CinderFallParams::default());
+//! cinder.cast([0.0, 0.0], [0.0, 1.0], 12.0, 7).unwrap();
+//! cinder.seek_abs(0.5);
+//! assert!(cinder.rock().visible);
 //! ```
 //!
 //! ## Attribution
@@ -40,7 +50,7 @@
 //!
 //! ## Scope
 //!
-//! Frost Lance and Storm Lance are in-crate. Cinder Fall, Nova Beam and
+//! Frost Lance, Storm Lance and Cinder Fall are in-crate. Nova Beam and
 //! Voltaic Snare — plus any Ext/Extended sandboxes — are follow-ups (see
 //! README).
 //!
@@ -62,6 +72,8 @@ pub mod pipeline;
 pub mod rng;
 pub mod spike;
 pub mod storm;
+pub mod cinder;
+pub mod fissure;
 
 #[cfg(feature = "wgpu")]
 pub mod gpu;
@@ -69,9 +81,17 @@ pub mod gpu;
 pub use aim::{AimReach, AimSolution, solve_aim};
 pub use filament::{StrandNode, StrandRecord, StrandSample, roll_strands};
 pub use params::{
-    FrostLanceParams, IMPACT_FRACTION, MAX_SPIKES, MAX_STRANDS, STRAND_NODES, StormLanceParams,
+    CinderFallParams, FISSURE_STEP, FrostLanceParams, IMPACT_FRACTION, MAX_CHUNKS,
+    MAX_FISSURE_ARMS, MAX_FISSURE_BRANCHES, MAX_SPIKES, MAX_STRANDS, STRAND_NODES,
+    StormLanceParams,
 };
 pub use pipeline::{FrostEvent, FrostLance, FrostLight, Phase, SpawnError, SEEK_STEP};
 pub use rng::FxRng;
 pub use spike::{SpikeRecord, SpikeSample, roll_spikes};
 pub use storm::{StormEvent, StormLance, StormLight};
+pub use cinder::{CinderEvent, CinderFall, CinderLight, RockSample};
+pub use fissure::{
+    ChunkRecord, ChunkSample, FissureArmRecord, FissureBranchRecord, FissureNode,
+    FissureSample, arc_point, heading_at, roll_chunks, roll_fissures, sample_chunk,
+    sample_fissures,
+};

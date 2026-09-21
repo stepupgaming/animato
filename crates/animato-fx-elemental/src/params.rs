@@ -404,6 +404,213 @@ impl crate::aim::AimReach for StormLanceParams {
         self.min_range
     }
 }
+/// Hard ceiling on debris chunks (matches `MAX_CHUNKS` in `MeteorAbility.js`).
+pub const MAX_CHUNKS: usize = 28;
+
+/// Hard ceiling on main fissure arms.
+pub const MAX_FISSURE_ARMS: usize = 12;
+
+/// Branches generated per fissure network (density slider culls them).
+pub const MAX_FISSURE_BRANCHES: usize = 8;
+
+/// Centreline resample step in unit space (matches `GroundFissures.js`).
+pub const FISSURE_STEP: f32 = 0.045;
+
+/// Procedural parameters for one Cinder Fall cast.
+///
+/// Field defaults reproduce the shipped `settings.meteor` look. Only
+/// CPU-resolved dimensions are carried — shader-only rock shading, volumetric
+/// trail, particle gradients and decal colours stay in GLSL and are documented
+/// in the crate README mapping.
+#[derive(Clone, Debug, PartialEq)]
+pub struct CinderFallParams {
+    // ── the cast itself ──
+    /// Maximum cast distance, metres.
+    pub range: f32,
+    /// Casts nearer than this are refused (mirrors the red arrow state).
+    pub min_range: f32,
+    /// Rock travel speed along the floor line, metres/second.
+    pub speed: f32,
+    /// Seconds the crater burns after impact.
+    pub lifetime: f32,
+    /// Seconds everything takes to clear.
+    pub fade_time: f32,
+    /// Seconds before the ability can be armed again.
+    pub cooldown: f32,
+    /// Global speed multiplier (mirrors `settings.global.speed`; `1.0` = off).
+    pub speed_scale: f32,
+    /// Global randomness multiplier (mirrors `settings.global.randomness`).
+    pub randomness: f32,
+
+    // ── the flight path ──
+    /// Metres above the floor at the hand.
+    pub hand_height: f32,
+    /// Metres in front of the caster.
+    pub hand_forward: f32,
+    /// Metres to the side (+ follows the cast `side`).
+    pub hand_side: f32,
+    /// Height of the rock where it lands, metres.
+    pub end_height: f32,
+    /// Metres the mid-span lobs upward.
+    pub arc: f32,
+    /// `<1` flattens the top of the arc, `>1` peaks it.
+    pub arc_curve: f32,
+
+    // ── the rock (CPU-relevant) ──
+    /// Rock radius, metres.
+    pub radius: f32,
+    /// Tumble rate, radians/second.
+    pub spin: f32,
+    /// How late the rock heats up on its way in (`pow(u, charge_curve)`).
+    pub charge_curve: f32,
+
+    // ── impact debris ──
+    /// Chunks thrown at impact (capped at [`MAX_CHUNKS`]).
+    pub chunk_count: f32,
+    /// Chunk radius as a fraction of the meteor's.
+    pub chunk_scale: f32,
+    /// Metres/second chunks leave the crater at.
+    pub chunk_speed: f32,
+    /// How far the spray is biased downrange.
+    pub chunk_forward: f32,
+    /// How steeply they are thrown.
+    pub chunk_loft: f32,
+    /// Gravity on chunk ballistics (negative).
+    pub chunk_gravity: f32,
+    /// Chunk tumble rate, radians/second.
+    pub chunk_spin: f32,
+    /// Seconds a chunk's seams take to go out.
+    pub chunk_cool: f32,
+    /// Seconds they lie there before sinking.
+    pub chunk_linger: f32,
+    /// Seconds to withdraw into the floor.
+    pub chunk_sink: f32,
+
+    // ── molten fissures ──
+    /// How far the cracks reach, metres.
+    pub fissure_radius: f32,
+    /// Seconds before they close up.
+    pub fissure_life: f32,
+    /// Main cracks radiating from the impact.
+    pub fissure_arms: f32,
+    /// How hard an arm veers, radians per unit walked.
+    pub fissure_wander: f32,
+    /// Fraction of generated branches kept, `0..1`.
+    pub fissure_branches: f32,
+    /// How far along a branch runs before its point, `0..1`.
+    pub fissure_branch_length: f32,
+    /// Width of the open seam, metres.
+    pub fissure_width: f32,
+    /// Core temperature / heat gain.
+    pub fissure_heat: f32,
+    /// Speed of heat waves travelling along them.
+    pub fissure_pulse: f32,
+    /// How fast the cracks race outward, metres/second.
+    pub fissure_growth: f32,
+    /// Basalt heaved up along the lips, metres.
+    pub fissure_rock_size: f32,
+
+    // ── dynamic light ──
+    /// Base intensity of the cast light.
+    pub light_intensity: f32,
+    /// Radius of the cast light, metres.
+    pub light_radius: f32,
+    /// Depth of the light's gutter, `0` = steady.
+    pub light_flicker: f32,
+    /// Light gutter steps/second.
+    pub light_flicker_speed: f32,
+}
+
+impl Default for CinderFallParams {
+    fn default() -> Self {
+        Self {
+            range: 20.0,
+            min_range: 3.0,
+            speed: 21.0,
+            lifetime: 2.2,
+            fade_time: 1.6,
+            cooldown: 0.9,
+            speed_scale: 1.0,
+            randomness: 1.0,
+
+            hand_height: 1.35,
+            hand_forward: 0.6,
+            hand_side: 0.2,
+            end_height: 0.75,
+            arc: 2.6,
+            arc_curve: 0.85,
+
+            radius: 0.8,
+            spin: 3.4,
+            charge_curve: 1.6,
+
+            chunk_count: 18.0,
+            chunk_scale: 0.28,
+            chunk_speed: 7.5,
+            chunk_forward: 0.55,
+            chunk_loft: 1.0,
+            chunk_gravity: -17.0,
+            chunk_spin: 6.0,
+            chunk_cool: 2.6,
+            chunk_linger: 0.5,
+            chunk_sink: 1.0,
+
+            fissure_radius: 5.2,
+            fissure_life: 6.5,
+            fissure_arms: 6.0,
+            fissure_wander: 1.6,
+            fissure_branches: 0.75,
+            fissure_branch_length: 0.85,
+            fissure_width: 0.14,
+            fissure_heat: 1.5,
+            fissure_pulse: 1.0,
+            fissure_growth: 9.0,
+            fissure_rock_size: 0.3,
+
+            light_intensity: 16.0,
+            light_radius: 14.0,
+            light_flicker: 0.25,
+            light_flicker_speed: 13.0,
+        }
+    }
+}
+
+impl CinderFallParams {
+    /// How many chunks a cast spends: `clamp(round(chunk_count), 0, 28)`.
+    pub fn chunk_budget(&self) -> usize {
+        libm::roundf(self.chunk_count).clamp(0.0, MAX_CHUNKS as f32) as usize
+    }
+
+    /// How many main fissure arms: `clamp(round(fissure_arms), 2, 12)`.
+    pub fn fissure_arm_budget(&self) -> usize {
+        libm::roundf(self.fissure_arms).clamp(2.0, MAX_FISSURE_ARMS as f32) as usize
+    }
+
+    /// Seconds the crater burns once the rock lands (`max(0.2, lifetime)`).
+    pub fn impact_duration(&self) -> f32 {
+        self.lifetime.max(0.2)
+    }
+
+    /// Seconds everything takes to clear (`max(0.2, fade_time)`).
+    pub fn fade_duration(&self) -> f32 {
+        self.fade_time.max(0.2)
+    }
+
+    /// Rock radius floored so samples never go degenerate.
+    pub fn rock_radius(&self) -> f32 {
+        self.radius.max(0.02)
+    }
+}
+
+impl crate::aim::AimReach for CinderFallParams {
+    fn cast_range(&self) -> f32 {
+        self.range
+    }
+
+    fn cast_min_range(&self) -> f32 {
+        self.min_range
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -487,5 +694,53 @@ mod tests {
         };
         assert_eq!(flat.impact_duration(), 0.05);
         assert_eq!(flat.fade_duration(), 0.05);
+    }
+
+    #[test]
+    fn meteor_defaults_match_shipped_settings() {
+        let p = CinderFallParams::default();
+        assert_eq!(p.range, 20.0);
+        assert_eq!(p.min_range, 3.0);
+        assert_eq!(p.speed, 21.0);
+        assert_eq!(p.lifetime, 2.2);
+        assert_eq!(p.fade_time, 1.6);
+        assert_eq!(p.arc, 2.6);
+        assert_eq!(p.arc_curve, 0.85);
+        assert_eq!(p.radius, 0.8);
+        assert_eq!(p.spin, 3.4);
+        assert_eq!(p.charge_curve, 1.6);
+        assert_eq!(p.fissure_arms, 6.0);
+        assert_eq!(p.fissure_radius, 5.2);
+        assert_eq!(p.chunk_count, 18.0);
+        assert_eq!(p.light_intensity, 16.0);
+        assert_eq!(p.chunk_budget(), 18);
+        assert_eq!(p.fissure_arm_budget(), 6);
+    }
+
+    #[test]
+    fn cinder_budgets_clamp() {
+        let mut p = CinderFallParams::default();
+        p.chunk_count = 100.0;
+        assert_eq!(p.chunk_budget(), MAX_CHUNKS);
+        p.chunk_count = -1.0;
+        assert_eq!(p.chunk_budget(), 0);
+        p.fissure_arms = 100.0;
+        assert_eq!(p.fissure_arm_budget(), MAX_FISSURE_ARMS);
+        p.fissure_arms = 1.0;
+        assert_eq!(p.fissure_arm_budget(), 2);
+    }
+
+    #[test]
+    fn cinder_phase_durations_have_floors() {
+        let p = CinderFallParams::default();
+        assert!((p.impact_duration() - 2.2).abs() < f32::EPSILON);
+        assert!((p.fade_duration() - 1.6).abs() < f32::EPSILON);
+        let flat = CinderFallParams {
+            lifetime: 0.0,
+            fade_time: 0.0,
+            ..CinderFallParams::default()
+        };
+        assert_eq!(flat.impact_duration(), 0.2);
+        assert_eq!(flat.fade_duration(), 0.2);
     }
 }
