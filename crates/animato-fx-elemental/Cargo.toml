@@ -1,0 +1,25 @@
+[package]
+name        = "animato-fx-elemental"
+description = "Optional elemental-VFX edge crate for Animato: seekable, time-driven port of the Frost Lance line-cast pipeline (Three.js/GLSL original by achrefelouafi, MIT). Pure Rust; no GPU required for tests."
+readme.workspace  = true
+version.workspace     = true
+edition.workspace     = true
+license.workspace     = true
+repository.workspace  = true
+authors.workspace     = true
+rust-version.workspace = true
+keywords    = ["vfx", "particles", "procedural", "timeline", "seek"]
+categories  = ["game-development", "graphics"]
+
+[features]
+default = ["std"]
+std     = ["animato-core/std"]
+wgpu    = ["dep:wgpu"]
+
+[dependencies]
+animato-core = { workspace = true }
+libm         = "0.2"
+wgpu         = { workspace = true, optional = true }
+
+[dev-dependencies]
+animato-composition = { workspace = true }

@@ -97,6 +97,7 @@
 //! | `macro` | Declarative `animato!{}` Motion Macro DSL |
 //! | `composition` | [`Composition`], [`Track`], [`Clip`] seekable track/clip composition |
 //! | `procgen` | Procedural-geometry edge crate: Delaunay, Voronoi, Lloyd, Poisson-disk, Worley, starter caustics |
+//! | `fx-elemental` (`elemental` alias) | Elemental-VFX edge crate: seekable Frost Lance line-cast pipeline |
 //! | `tokio` | [`Timeline::wait()`] async completion waiting |
 //! | `serde` | `Serialize`/`Deserialize` on all public types |
 
@@ -262,6 +263,13 @@ pub use animato_procgen::{
     voronoi,
 };
 
+// ── Elemental FX (optional edge crate; defaults unchanged) ───────────────────
+#[cfg(any(feature = "fx-elemental", feature = "elemental"))]
+pub use animato_fx_elemental::{
+    AimSolution, FrostEvent, FrostLance, FrostLanceParams, FrostLight, Phase as FrostPhase,
+    SpawnError as FrostSpawnError, SpikeRecord, SpikeSample, solve_aim,
+};
+
 /// Prelude module with macro-friendly re-exports.
 ///
 /// Import everything for ergonomic macro usage:
@@ -326,5 +334,11 @@ pub mod prelude {
     pub use crate::{
         Bounds, CausticField, ProcgenPoint, SmallRng, VoronoiCell, WorleyField, lloyd_relax,
         poisson_disk, polygon_area, polygon_centroid, signed_area2, triangulate, voronoi,
+    };
+
+    #[cfg(any(feature = "fx-elemental", feature = "elemental"))]
+    pub use crate::{
+        AimSolution, FrostEvent, FrostLance, FrostLanceParams, FrostLight, FrostPhase,
+        FrostSpawnError, SpikeRecord, SpikeSample, solve_aim,
     };
 }

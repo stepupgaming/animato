@@ -42,6 +42,7 @@ members = [
     "crates/animato-macro",
     "crates/animato-composition",
     "crates/animato-procgen",
+    "crates/animato-fx-elemental",
     "crates/animato",
 ]
 
@@ -75,6 +76,7 @@ animato-devtools = { path = "crates/animato-devtools", version = "1.7.2" }
 animato-macro    = { path = "crates/animato-macro",    version = "1.7.2" }
 animato-composition = { path = "crates/animato-composition", version = "1.7.2" }
 animato-procgen = { path = "crates/animato-procgen", version = "1.7.2" }
+animato-fx-elemental = { path = "crates/animato-fx-elemental", version = "1.7.2" }
 
 # External crates — shared version pins
 serde        = { version = "1",   features = ["derive"] }

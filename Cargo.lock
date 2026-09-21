@@ -67,6 +67,7 @@ dependencies = [
  "animato-devtools",
  "animato-dioxus",
  "animato-driver",
+ "animato-fx-elemental",
  "animato-gpu",
  "animato-js",
  "animato-leptos",
@@ -170,6 +171,16 @@ version = "1.7.2"
 dependencies = [
  "animato-core",
  "animato-tween",
+]
+
+[[package]]
+name = "animato-fx-elemental"
+version = "1.7.2"
+dependencies = [
+ "animato-composition",
+ "animato-core",
+ "libm",
+ "wgpu",
 ]
 
 [[package]]
