@@ -74,9 +74,13 @@ traits: it must land as an optional edge crate with unchanged defaults.
    first-class `Phase::Charge`, parametric tube and shock-disc train).
    **Voltaic Snare (V)** is now in-crate (`VoltaicSnare` /
    `VoltaicSnareParams` / `cage.rs` — SnareAbility port with first-class
-   ZONE aim via `solve_zone_aim`, leash travel and lightning cage). Ext /
+   ZONE aim via `solve_zone_aim`, leash travel and lightning cage).
+   **Glacial Crown (X)** is now in-crate (`GlacialCrown` /
+   `GlacialCrownParams` / `crown.rs` — GlacierAbility ZONE port with
+   freeze-front travel, ring/skirt/core bloom and veil/sheet samples),
+   completing the LinearAbilityCastingThreeJS ability set. Ext /
    Extended sandboxes and a full `wgpu` renderer backend (particles, decals,
-   ice/lightning/meteor/beam/snare shading) are not started here.
+   ice/lightning/meteor/beam/snare/glacier shading) are not started here.
 
 ## Consequences
 

@@ -1,6 +1,6 @@
 # Attribution — elemental VFX source
 
-`animato-fx-elemental` ports the **Frost Lance (Q)**, **Storm Lance (E)**, **Cinder Fall (R)**, **Nova Beam (F)** and **Voltaic Snare (V)** ability pipelines from:
+`animato-fx-elemental` ports the **Frost Lance (Q)**, **Storm Lance (E)**, **Cinder Fall (R)**, **Nova Beam (F)**, **Voltaic Snare (V)** and **Glacial Crown (X)** ability pipelines from:
 
 - **Project:** [LinearAbiltyCastingThreeJS](https://github.com/achrefelouafi/LinearAbiltyCastingThreeJS)
   ("Elemental Sandbox" — a skillshot VFX sandbox built with Three.js, Vite
@@ -17,9 +17,11 @@ Only the intangible structure, re-expressed in renderer-agnostic Rust:
   (`ThunderAbility.js` + `LightningMaterial.js`), Cinder Fall ballistic
   arc / debris / fissure logic (`MeteorAbility.js` + `GroundFissures.js`),
   Nova Beam charge / tube / ring logic (`BeamAbility.js`), Voltaic Snare
-  zone / leash / cage logic (`SnareAbility.js` + `SnareMaterial.js`), timing
-  curves and the dice-only record rule;
-- the `ice`, `thunder`, `meteor`, `beam` and `snare` parameter-block defaults (`src/config/settings.js`);
+  zone / leash / cage logic (`SnareAbility.js` + `SnareMaterial.js`), Glacial
+  Crown zone / ring / skirt / veil logic (`GlacierAbility.js` +
+  `GlacierMaterial.js` / `FrostFieldMaterial.js`), timing curves and the
+  dice-only record rule;
+- the `ice`, `thunder`, `meteor`, `beam`, `snare` and `glacier` parameter-block defaults (`src/config/settings.js`);
 - the aim-clamp / `minRange`-refusal rule and zone-cast circle solve (`src/input/AimController.js`);
 - the maths helpers (`src/utils/math.js`).
 

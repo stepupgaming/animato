@@ -97,7 +97,7 @@
 //! | `macro` | Declarative `animato!{}` Motion Macro DSL |
 //! | `composition` | [`Composition`], [`Track`], [`Clip`] seekable track/clip composition |
 //! | `procgen` | Procedural-geometry edge crate: Delaunay, Voronoi, Lloyd, Poisson-disk, Worley, starter caustics |
-//! | `fx-elemental` (`elemental` alias) | Elemental-VFX edge crate: seekable Frost Lance + Storm Lance + Cinder Fall + Nova Beam + Voltaic Snare pipelines |
+//! | `fx-elemental` (`elemental` alias) | Elemental-VFX edge crate: seekable Frost Lance + Storm Lance + Cinder Fall + Nova Beam + Voltaic Snare + Glacial Crown pipelines |
 //! | `tokio` | [`Timeline::wait()`] async completion waiting |
 //! | `serde` | `Serialize`/`Deserialize` on all public types |
 
@@ -268,19 +268,23 @@ pub use animato_procgen::{
 pub use animato_fx_elemental::{
     AimReach, AimSolution, CAGE_NODES, CageContext, CageNode, CageRecord, CageSample,
     CinderEvent, CinderFall, CinderFallParams, CinderLight, ChunkRecord, ChunkSample,
-    FISSURE_STEP, FilamentRole, FissureArmRecord, FissureBranchRecord, FissureNode,
-    FissureSample, FrostEvent, FrostLance, FrostLanceParams, FrostLight, FxRng,
-    IMPACT_FRACTION, MAX_CHUNKS, MAX_COILS, MAX_COLUMN, MAX_FISSURE_ARMS,
-    MAX_FISSURE_BRANCHES, MAX_LEASH, MAX_RIM, MAX_RINGS, MAX_SPIKES, MAX_STRANDS,
-    MAX_TENDRIL, NovaBeam, NovaBeamParams, NovaEvent, NovaLight, OrbSample,
+    CrownRecord, CrownSample, FISSURE_STEP, FieldSample, FilamentRole, FissureArmRecord,
+    FissureBranchRecord, FissureNode, FissureSample, FrostEvent, FrostLance,
+    FrostLanceParams, FrostLight, FxRng, GlacialCrown, GlacialCrownParams, GlacialEvent,
+    GlacialLight, IMPACT_FRACTION, MAX_CHUNKS, MAX_COILS, MAX_COLUMN, MAX_CROWN_SPIKES,
+    MAX_FISSURE_ARMS, MAX_FISSURE_BRANCHES, MAX_LEASH, MAX_RIM, MAX_RINGS, MAX_SPIKES,
+    MAX_STRANDS, MAX_TENDRIL, NovaBeam, NovaBeamParams, NovaEvent, NovaLight, OrbSample,
     Phase as FrostPhase, RingRecord, RingSample, RockSample, SEEK_STEP, STRAND_NODES,
-    SpawnError as FrostSpawnError, SpikeRecord, SpikeSample, StormEvent, StormLance,
-    StormLanceParams, StormLight, StrandNode, StrandRecord, StrandSample, TUBE_SEGMENTS,
-    TubeNode, VoltaicEvent, VoltaicLight, VoltaicSnare, VoltaicSnareParams,
-    ZoneAimReach, ZoneAimSolution, arc_point, beam_axis_point, beam_radius, climb_amount,
-    heading_at, open_amount, roll_cage, roll_chunks, roll_fissures, roll_rings,
-    roll_spikes, roll_strands, sample_cage, sample_chunk, sample_filament, sample_fissures,
-    sample_ring, solve_aim, solve_zone_aim, solve_zone_aim_at,
+    ShardRole, SpawnError as FrostSpawnError, SpikeRecord, SpikeSample, StormEvent,
+    StormLance, StormLanceParams, StormLight, StrandNode, StrandRecord, StrandSample,
+    TUBE_SEGMENTS, TubeNode, VeilSample, VoltaicEvent, VoltaicLight, VoltaicSnare,
+    VoltaicSnareParams, ZoneAimReach, ZoneAimSolution, angle_delta, arc_point,
+    beam_axis_point, beam_radius, birth_flash, climb_amount, emergence, growth,
+    heading_at, open_amount, roll_cage, roll_chunks, roll_crown, roll_fissures, roll_rings,
+    roll_spikes, roll_strands, sample_cage, sample_chunk, sample_crown, sample_field,
+    sample_filament, sample_fissures, sample_ring, sample_shard, sample_veil,
+    schedule_eruption, shatter_amount, shard_fan, shard_height, shard_lean, shard_position,
+    shard_radius, solve_aim, solve_zone_aim, solve_zone_aim_at,
 };
 
 /// Prelude module with macro-friendly re-exports.
@@ -348,18 +352,23 @@ pub mod prelude {
     pub use crate::{
         AimReach, AimSolution, CAGE_NODES, CageContext, CageNode, CageRecord, CageSample,
         CinderEvent, CinderFall, CinderFallParams, CinderLight, ChunkRecord, ChunkSample,
-        FISSURE_STEP, FilamentRole, FissureArmRecord, FissureBranchRecord, FissureNode,
-        FissureSample, FrostEvent, FrostLance, FrostLanceParams, FrostLight, FrostPhase,
-        FrostSpawnError, FxRng, IMPACT_FRACTION, MAX_CHUNKS, MAX_COILS, MAX_COLUMN,
-        MAX_FISSURE_ARMS, MAX_FISSURE_BRANCHES, MAX_LEASH, MAX_RIM, MAX_RINGS, MAX_SPIKES,
-        MAX_STRANDS, MAX_TENDRIL, NovaBeam, NovaBeamParams, NovaEvent, NovaLight,
-        OrbSample, RingRecord, RingSample, RockSample, SEEK_STEP, STRAND_NODES,
-        SpikeRecord, SpikeSample, StormEvent, StormLance, StormLanceParams, StormLight,
-        StrandNode, StrandRecord, StrandSample, TUBE_SEGMENTS, TubeNode, VoltaicEvent,
-        VoltaicLight, VoltaicSnare, VoltaicSnareParams, ZoneAimReach, ZoneAimSolution,
-        arc_point, beam_axis_point, beam_radius, climb_amount, heading_at, open_amount,
-        roll_cage, roll_chunks, roll_fissures, roll_rings, roll_spikes, roll_strands,
-        sample_cage, sample_chunk, sample_filament, sample_fissures, sample_ring,
-        solve_aim, solve_zone_aim, solve_zone_aim_at,
+        CrownRecord, CrownSample, FISSURE_STEP, FieldSample, FilamentRole, FissureArmRecord,
+        FissureBranchRecord, FissureNode, FissureSample, FrostEvent, FrostLance,
+        FrostLanceParams, FrostLight, FrostPhase, FrostSpawnError, FxRng, GlacialCrown,
+        GlacialCrownParams, GlacialEvent, GlacialLight, IMPACT_FRACTION, MAX_CHUNKS,
+        MAX_COILS, MAX_COLUMN, MAX_CROWN_SPIKES, MAX_FISSURE_ARMS, MAX_FISSURE_BRANCHES,
+        MAX_LEASH, MAX_RIM, MAX_RINGS, MAX_SPIKES, MAX_STRANDS, MAX_TENDRIL, NovaBeam,
+        NovaBeamParams, NovaEvent, NovaLight, OrbSample, RingRecord, RingSample,
+        RockSample, SEEK_STEP, STRAND_NODES, ShardRole, SpikeRecord, SpikeSample,
+        StormEvent, StormLance, StormLanceParams, StormLight, StrandNode, StrandRecord,
+        StrandSample, TUBE_SEGMENTS, TubeNode, VeilSample, VoltaicEvent, VoltaicLight,
+        VoltaicSnare, VoltaicSnareParams, ZoneAimReach, ZoneAimSolution, angle_delta,
+        arc_point, beam_axis_point, beam_radius, birth_flash, climb_amount, emergence,
+        growth, heading_at, open_amount, roll_cage, roll_chunks, roll_crown, roll_fissures,
+        roll_rings, roll_spikes, roll_strands, sample_cage, sample_chunk, sample_crown,
+        sample_field, sample_filament, sample_fissures, sample_ring, sample_shard,
+        sample_veil, schedule_eruption, shatter_amount, shard_fan, shard_height,
+        shard_lean, shard_position, shard_radius, solve_aim, solve_zone_aim,
+        solve_zone_aim_at,
     };
 }

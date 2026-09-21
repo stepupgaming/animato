@@ -1097,6 +1097,288 @@ impl crate::aim::ZoneAimReach for VoltaicSnareParams {
 }
 
 
+/// Hard ceiling on crown shards (matches `MAX_SPIKES` in `GlacierAbility.js`).
+pub const MAX_CROWN_SPIKES: usize = 320;
+
+/// Procedural parameters for the Glacial Crown far-cast.
+///
+/// Mirrors the `glacier` block of `src/config/settings.js`. Only CPU-resolved
+/// dimensions are carried — colours / particle rates / material-shader tuning
+/// stay GLSL downstream. Metres that scale under `zone_radius` (ring seat,
+/// skirt band, veil radius, …) are stored as **unit fractions** and multiplied
+/// by the live footprint at sample time, so editing `zone_radius` on a standing
+/// crown reshapes it with the clock stopped.
+#[derive(Clone, Debug, PartialEq)]
+pub struct GlacialCrownParams {
+    // ── the cast ──
+    /// Maximum cast distance, metres.
+    pub range: f32,
+    /// Casts nearer than this are refused (`0` = plant underfoot is legal).
+    pub min_range: f32,
+    /// Footprint the circle indicator measures out, metres.
+    pub zone_radius: f32,
+    /// How fast the freeze front races to the point, metres/second.
+    pub speed: f32,
+    /// Seconds the sheet takes to freeze out to the boundary.
+    pub snap_time: f32,
+    /// Seconds the crown stands (impact phase).
+    pub lifetime: f32,
+    /// Seconds after `lifetime` before the ice starts to break.
+    pub shatter_delay: f32,
+    /// Seconds of random delay between neighbours during shatter.
+    pub shatter_stagger: f32,
+    /// Seconds one shard takes to crumble and withdraw.
+    pub sink_time: f32,
+    /// Seconds before the ability can be armed again.
+    pub cooldown: f32,
+    /// Global speed multiplier (`settings.global.speed`).
+    pub speed_scale: f32,
+    /// Global randomness multiplier (`settings.global.randomness`).
+    pub randomness: f32,
+
+    // ── hand origin ──
+    /// Metres above the floor at the hand.
+    pub hand_height: f32,
+    /// Metres in front of the caster.
+    pub hand_forward: f32,
+    /// Metres to the side (+ follows the cast `side`).
+    pub hand_side: f32,
+
+    // ── footprint fill ──
+    /// Instances spent on one cast (capped at [`MAX_CROWN_SPIKES`]).
+    pub spike_count: f32,
+    /// Multiplier on that count.
+    pub density: f32,
+    /// Fraction spent on the wall at the boundary.
+    pub ring_share: f32,
+    /// Fraction on the spire in the middle (`0` = middle stays open).
+    pub core_share: f32,
+    /// Fraction of skirt held back for the hold.
+    pub late_share: f32,
+    /// Where the wall stands, × `zone_radius`.
+    pub ring_seat: f32,
+    /// Radial jitter of the wall, × `zone_radius`.
+    pub ring_scatter: f32,
+    /// Inner lip of the wreckage bank, × `zone_radius`.
+    pub skirt_seat: f32,
+    /// How wide that band is, × `zone_radius`.
+    pub skirt_band: f32,
+    /// `<1` pushes the skirt outward, `>1` crowds it inward.
+    pub skirt_bias: f32,
+    /// Radius of the cluster in the middle, × `zone_radius`.
+    pub core_spread: f32,
+
+    // ── silhouette ──
+    /// Length of a blade on the wall, metres.
+    pub ring_height: f32,
+    /// How uneven the crest of that wall is, `0..1`.
+    pub ring_wave: f32,
+    /// Length of a shard in the skirt, metres.
+    pub skirt_height: f32,
+    /// Length of the spire, metres.
+    pub core_height: f32,
+    /// Height jitter strength.
+    pub height_jitter: f32,
+    /// Radians the wall is thrown outward.
+    pub ring_lean: f32,
+    /// Radians the skirt leans.
+    pub skirt_lean: f32,
+    /// Radians the spire leans.
+    pub core_lean: f32,
+    /// Lean jitter strength.
+    pub lean_jitter: f32,
+    /// Radians a blade is splayed off its own radius, ±.
+    pub fan: f32,
+    /// Random yaw, `0..1` of a full turn.
+    pub twist: f32,
+    /// Fraction of the skirt demoted to ankle-height wreckage.
+    pub rubble: f32,
+    /// Height scale for rubble shards.
+    pub rubble_scale: f32,
+
+    // ── crystal ──
+    /// Base radius, metres.
+    pub crystal_radius: f32,
+    /// Radius jitter strength.
+    pub radius_jitter: f32,
+    /// Tip radius as a fraction of the base.
+    pub taper: f32,
+    /// Sides of the prism.
+    pub facets: f32,
+    /// How far the facets are pushed off a clean prism.
+    pub roughness: f32,
+    /// Sideways curve from base to tip.
+    pub bend: f32,
+
+    // ── bloom timing ──
+    /// Seconds from buried to full height.
+    pub rise_time: f32,
+    /// How far past full height the punch carries.
+    pub rise_overshoot: f32,
+    /// Seconds the overshoot takes to damp out.
+    pub settle: f32,
+    /// Seconds the wave takes to run around the ring.
+    pub sweep_time: f32,
+    /// Seconds before the skirt starts.
+    pub skirt_delay: f32,
+    /// How long the skirt takes to cross the band.
+    pub skirt_wave: f32,
+    /// Seconds before the spire comes up.
+    pub core_delay: f32,
+    /// Seconds of random delay on top of all of it.
+    pub stagger: f32,
+    /// Fraction of the hold the late shards are scattered over.
+    pub bloom_spread: f32,
+    /// Seconds the birth flash lasts.
+    pub birth_fade: f32,
+
+    // ── sheet + veil ──
+    /// Thickness of the band at the edge, metres.
+    pub field_boundary: f32,
+    /// Hover distance above the floor, metres.
+    pub field_height: f32,
+    /// Master opacity of the curtain, `0` hides it.
+    pub veil: f32,
+    /// How high the curtain stands, metres.
+    pub veil_height: f32,
+    /// Where it stands, × `zone_radius`.
+    pub veil_radius: f32,
+    /// Revolutions/second the whole curtain turns.
+    pub veil_spin: f32,
+
+    // ── dynamic light ──
+    /// Base intensity of the cast light.
+    pub light_intensity: f32,
+    /// Radius of the cast light, metres.
+    pub light_radius: f32,
+    /// How far up the crown the light sits, `0..1`.
+    pub light_height: f32,
+}
+
+impl Default for GlacialCrownParams {
+    fn default() -> Self {
+        Self {
+            range: 18.0,
+            min_range: 0.0,
+            zone_radius: 4.6,
+            speed: 44.0,
+            snap_time: 0.22,
+            lifetime: 4.2,
+            shatter_delay: 0.5,
+            shatter_stagger: 0.45,
+            sink_time: 1.15,
+            cooldown: 1.6,
+            speed_scale: 1.0,
+            randomness: 1.0,
+
+            hand_height: 1.22,
+            hand_forward: 0.6,
+            hand_side: 0.18,
+
+            spike_count: 220.0,
+            density: 1.0,
+            ring_share: 0.6,
+            core_share: 0.0,
+            late_share: 0.12,
+            ring_seat: 0.94,
+            ring_scatter: 0.16,
+            skirt_seat: 0.74,
+            skirt_band: 0.42,
+            skirt_bias: 0.9,
+            core_spread: 0.16,
+
+            ring_height: 1.4,
+            ring_wave: 0.61,
+            skirt_height: 1.7,
+            core_height: 5.2,
+            height_jitter: 0.65,
+            ring_lean: 0.33,
+            skirt_lean: 0.3,
+            core_lean: 0.2,
+            lean_jitter: 1.3,
+            fan: 1.16,
+            twist: 1.0,
+            rubble: 0.53,
+            rubble_scale: 0.34,
+
+            crystal_radius: 0.375,
+            radius_jitter: 0.94,
+            taper: 0.36,
+            facets: 7.0,
+            roughness: 0.0,
+            bend: 0.0,
+
+            rise_time: 0.2,
+            rise_overshoot: 0.3,
+            settle: 0.5,
+            sweep_time: 0.42,
+            skirt_delay: 0.1,
+            skirt_wave: 0.26,
+            core_delay: 0.2,
+            stagger: 0.07,
+            bloom_spread: 0.7,
+            birth_fade: 0.5,
+
+            field_boundary: 0.4,
+            field_height: 0.03,
+            veil: 0.5,
+            veil_height: 1.9,
+            veil_radius: 1.02,
+            veil_spin: 0.02,
+
+            light_intensity: 14.0,
+            light_radius: 16.0,
+            light_height: 0.45,
+        }
+    }
+}
+
+impl GlacialCrownParams {
+    /// Live footprint, metres (`max(0.05, zone_radius)`).
+    pub fn radius(&self) -> f32 {
+        self.zone_radius.max(0.05)
+    }
+
+    /// Shard budget: `clamp(round(spike_count * density), 1, MAX_CROWN_SPIKES)`.
+    pub fn spike_budget(&self) -> usize {
+        libm::roundf(self.spike_count * self.density)
+            .clamp(1.0, MAX_CROWN_SPIKES as f32) as usize
+    }
+
+    /// Seconds the sheet takes to freeze out (`max(0.02, snap_time)`).
+    pub fn snap_duration(&self) -> f32 {
+        self.snap_time.max(0.02)
+    }
+
+    /// Seconds the crown stands (`max(0.2, lifetime)`).
+    pub fn impact_duration(&self) -> f32 {
+        self.lifetime.max(0.2)
+    }
+
+    /// Collapse duration: shatter delay + stagger + sink (`max(0.2, …)`).
+    pub fn fade_duration(&self) -> f32 {
+        (self.shatter_delay + self.shatter_stagger + self.sink_time).max(0.2)
+    }
+}
+
+impl crate::aim::AimReach for GlacialCrownParams {
+    fn cast_range(&self) -> f32 {
+        self.range
+    }
+
+    fn cast_min_range(&self) -> f32 {
+        self.min_range
+    }
+}
+
+impl crate::aim::ZoneAimReach for GlacialCrownParams {
+    fn zone_radius(&self) -> f32 {
+        self.zone_radius
+    }
+}
+
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1317,6 +1599,50 @@ mod tests {
         assert_eq!(flat.snap_duration(), 0.01);
         assert_eq!(flat.impact_duration(), 0.05);
         assert_eq!(flat.fade_duration(), 0.05);
+    }
+
+    #[test]
+    fn glacier_defaults_match_shipped_settings() {
+        let p = GlacialCrownParams::default();
+        assert_eq!(p.range, 18.0);
+        assert_eq!(p.min_range, 0.0);
+        assert_eq!(p.zone_radius, 4.6);
+        assert_eq!(p.speed, 44.0);
+        assert_eq!(p.snap_time, 0.22);
+        assert_eq!(p.lifetime, 4.2);
+        assert_eq!(p.shatter_delay, 0.5);
+        assert_eq!(p.shatter_stagger, 0.45);
+        assert_eq!(p.sink_time, 1.15);
+        assert_eq!(p.spike_count, 220.0);
+        assert_eq!(p.ring_share, 0.6);
+        assert_eq!(p.core_share, 0.0);
+        assert_eq!(p.ring_height, 1.4);
+        assert_eq!(p.veil, 0.5);
+        assert_eq!(p.light_intensity, 14.0);
+        assert_eq!(p.spike_budget(), 220);
+    }
+
+    #[test]
+    fn glacier_budgets_and_floors() {
+        let mut p = GlacialCrownParams::default();
+        p.spike_count = 10_000.0;
+        assert_eq!(p.spike_budget(), MAX_CROWN_SPIKES);
+        p.spike_count = 0.0;
+        assert_eq!(p.spike_budget(), 1);
+        assert!((p.snap_duration() - 0.22).abs() < f32::EPSILON);
+        assert!((p.impact_duration() - 4.2).abs() < f32::EPSILON);
+        assert!((p.fade_duration() - 2.1).abs() < f32::EPSILON);
+        let flat = GlacialCrownParams {
+            snap_time: 0.0,
+            lifetime: 0.0,
+            shatter_delay: 0.0,
+            shatter_stagger: 0.0,
+            sink_time: 0.0,
+            ..GlacialCrownParams::default()
+        };
+        assert_eq!(flat.snap_duration(), 0.02);
+        assert_eq!(flat.impact_duration(), 0.2);
+        assert_eq!(flat.fade_duration(), 0.2);
     }
 
 }
