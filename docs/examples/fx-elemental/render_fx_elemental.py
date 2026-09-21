@@ -2,12 +2,12 @@
 """Render cinematic 1280x720 Elemental Lab product-demo clips.
 
 Every transform comes from the REAL Rust pipeline dumps
-(``dump_frost_lance`` / ``dump_storm_lance`` / ``dump_cinder_fall``).
+(``dump_frost_lance`` / ``dump_storm_lance`` / ``dump_cinder_fall`` / ``dump_nova_beam``).
 This script only handles presentation — dark glassy card UI, ice/cyan,
-storm/blue or cinder/ember palette, ffmpeg H.264 + GIF for issue embeds.
+storm/blue, cinder/ember or nova/cyan-gold palette, ffmpeg H.264 + GIF for issue embeds.
 
 Usage:
-    python3 render_fx_elemental.py [--ability frost|storm|cinder|all] [--output DIR] [--regen]
+    python3 render_fx_elemental.py [--ability frost|storm|cinder|nova|all] [--output DIR] [--regen]
 """
 
 from __future__ import annotations
@@ -915,10 +915,308 @@ def render_cinder(output: Path, dump_path: Path, regen: bool) -> None:
     encode_gif(mp4, output / "cinder_fall.gif")
 
 
+
+# ── Nova Beam (F) ────────────────────────────────────────────────────────────
+
+NOVA_SUBTITLES = {
+    "Charge": "charge orb winding up — front held at the hands",
+    "Travel": "leading edge racing — column boring down the aim line",
+    "Impact": "sustain burn — shock discs racing the standing beam",
+    "Fade": "collapse — width snaps to a thread, then blinks out",
+    "Done": "pipeline complete — ready for the next cast",
+    "Idle": "aim solution locked — cast armed",
+}
+
+NOVA_CHIPS = {
+    "Charge": "CHARGE — ORB WIND-UP",
+    "Travel": "TRAVEL — BEAM FRONT",
+    "Impact": "IMPACT — SUSTAIN BURN",
+    "Fade": "FADE — COLLAPSE",
+    "Done": "DONE",
+    "Idle": "AIM — CAST ARMED",
+}
+
+NOVA_CYAN = (127, 240, 255)
+NOVA_CORE = (255, 255, 255)
+NOVA_GOLD = (255, 220, 140)
+NOVA_SHEATH = (62, 198, 255)
+
+
+def load_nova_dump(dump_path: Path, regen: bool) -> dict:
+    if regen or not dump_path.exists() or dump_path.stat().st_size == 0:
+        cargo = shutil.which("cargo")
+        if cargo is None:
+            raise RuntimeError("cargo is required to regenerate the frame dump")
+        print(f"regenerating {dump_path} via dump_nova_beam example…")
+        subprocess.run(
+            [cargo, "run", "-q", "-p", "animato-fx-elemental",
+             "--example", "dump_nova_beam", "--", str(dump_path)],
+            cwd=REPO_ROOT,
+            check=True,
+        )
+    with open(dump_path) as f:
+        return json.load(f)
+
+
+def nova_phase_boundaries(frames: list[dict]) -> tuple[float, float, float, float]:
+    charge_end = travel_end = fade_start = frames[-1]["t"]
+    for fr in frames:
+        if fr["phase"] == "Travel":
+            charge_end = fr["t"]
+            break
+    for fr in frames:
+        if fr["phase"] == "Impact":
+            travel_end = fr["t"]
+            break
+    for fr in frames:
+        if fr["phase"] == "Fade":
+            fade_start = fr["t"]
+            break
+    return charge_end, travel_end, fade_start, frames[-1]["t"]
+
+
+def nova_base_scene(kicker, title, subtitle, chip, right_meta):
+    image = BACKGROUND.copy()
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((68, 48, 1212, 672), radius=22, fill=CARD, outline=(30, 70, 100, 230), width=2)
+    draw.line((96, 166, 1184, 166), fill=(30, 70, 100, 190), width=1)
+    draw.text((120, 78), kicker, font=FONT_KICKER, fill=(100, 220, 240))
+    draw.text((120, 101), title, font=FONT_TITLE, fill=(231, 244, 255))
+    draw.text((120, 140), subtitle, font=FONT_SUBTITLE, fill=MUTED)
+    chip_w = max(130, int(draw.textlength(chip, font=FONT_CHIP) + 48))
+    chip_x = 1160 - chip_w
+    draw.rounded_rectangle((chip_x, 91, 1160, 125), radius=17, fill=(8, 40, 60, 245), outline=(60, 180, 210, 220), width=1)
+    draw.ellipse((chip_x + 14, 103, chip_x + 21, 110), fill=NOVA_CYAN)
+    draw.text((chip_x + 31, 99), chip, font=FONT_CHIP, fill=(180, 240, 255))
+    draw.rounded_rectangle((PLOT_X - 1, PLOT_Y - 1, PLOT_X + PLOT_W + 1, PLOT_Y + PLOT_H + 1), radius=12, fill=PLOT_BG, outline=(29, 80, 110, 255), width=2)
+    for x in range(PLOT_X + 40, PLOT_X + PLOT_W, 80):
+        draw.line((x, PLOT_Y + 2, x, PLOT_Y + PLOT_H - 2), fill=GRID, width=1)
+    for y in range(PLOT_Y + 40, PLOT_Y + PLOT_H, 56):
+        draw.line((PLOT_X + 2, y, PLOT_X + PLOT_W - 2, y), fill=GRID, width=1)
+    draw.text((PLOT_X + 22, PLOT_Y + 16), "LIVE PREVIEW  —  FROM RUST DUMP", font=FONT_PLOT, fill=(78, 160, 190))
+    draw.text((PLOT_X + PLOT_W - 150, PLOT_Y + 16), right_meta, font=FONT_TINY, fill=(74, 130, 160))
+    draw.text((120, 625), "ANIMATO  /  ELEMENTAL LAB", font=FONT_META_BOLD, fill=(74, 130, 160))
+    draw.text((370, 625), "NOVA BEAM (F)  —  SEEDED, SEEKABLE PIPELINE", font=FONT_META, fill=(69, 110, 140))
+    return image, ImageDraw.Draw(image)
+
+
+def nova_frame(frame: dict, dump: dict, bounds: tuple) -> Image.Image:
+    charge_end, travel_end, fade_start, total = bounds
+    phase = frame["phase"]
+    t = frame["t"]
+    image, _ = nova_base_scene(
+        "ELEMENTAL SANDBOX  /  NOVA BEAM (F)",
+        "NOVA BEAM",
+        NOVA_SUBTITLES.get(phase, ""),
+        NOVA_CHIPS.get(phase, phase.upper()),
+        "SEED 7  /  SEEKABLE",
+    )
+
+    fade = max(0.0, min(1.0, frame.get("fade", 1.0)))
+    width_fade = max(0.0, min(1.0, frame.get("width_fade", 1.0)))
+
+    # Soft cyan wash along the drawn column.
+    wash, wash_draw = alpha_layer()
+    prog_z = frame["front_pos"][1] if phase in ("Travel", "Charge") else frame["impact_pos"][1]
+    if phase == "Charge":
+        prog_z = frame["hand"][2] if "hand" in frame else 0.7
+    _, front_z = world_to_screen(0.0, prog_z if phase != "Charge" else frame.get("hand", [0, 0, 0.7])[2])
+    # Use progress along floor z for wash extent.
+    wash_z = frame["front_pos"][1] if phase == "Travel" else (
+        frame["impact_pos"][1] if phase in ("Impact", "Fade", "Done") else frame["hand"][2]
+    )
+    _, wash_x = world_to_screen(0.0, wash_z)
+    wash_draw.rectangle((PLOT_X, PLOT_Y, max(PLOT_X + 8, wash_x), PLOT_Y + PLOT_H), fill=(40, 160, 200, 30))
+    image.alpha_composite(wash.filter(ImageFilter.GaussianBlur(14)))
+
+    c0 = world_to_screen(0.0, 0.0)
+    c1 = world_to_screen(0.0, frame["impact_pos"][1])
+    ImageDraw.Draw(image).line((c0, c1), fill=(40, 100, 130, 255), width=1)
+
+    if t < 0.25 and phase in ("Charge", "Idle", "Travel"):
+        overlay, odraw = alpha_layer()
+        steps = 24
+        for i in range(steps):
+            s0 = i / steps
+            s1 = (i + 0.55) / steps
+            if i % 2 == 0:
+                p0 = (c0[0] + (c1[0] - c0[0]) * s0, c0[1])
+                p1 = (c0[0] + (c1[0] - c0[0]) * min(s1, 1.0), c0[1])
+                odraw.line((p0, p1), fill=(150, 230, 255, 200), width=2)
+        odraw.polygon([(c1[0], c1[1] - 9), (c1[0] + 14, c1[1]), (c1[0], c1[1] + 9)], fill=(150, 230, 255, 200))
+        image.alpha_composite(overlay)
+
+    # Charge orb at the hand.
+    orb = frame.get("orb", {})
+    if orb.get("visible"):
+        hx, hy = world_to_screen(orb["x"], orb["z"])
+        hy -= orb["y"] * 14.0
+        rr = max(4.0, orb["radius"] * 28.0)
+        glow, gdraw = alpha_layer()
+        gdraw.ellipse((hx - rr * 1.8, hy - rr * 1.8, hx + rr * 1.8, hy + rr * 1.8),
+                      fill=(*NOVA_CYAN, int(70 * orb["charge"] * fade)))
+        image.alpha_composite(glow.filter(ImageFilter.GaussianBlur(10)))
+        draw = ImageDraw.Draw(image)
+        draw.ellipse((hx - rr, hy - rr, hx + rr, hy + rr),
+                     fill=(*lerp3(NOVA_SHEATH, NOVA_CORE, orb["charge"]), int(180 + 70 * orb["charge"])))
+        draw.ellipse((hx - rr * 0.4, hy - rr * 0.4, hx + rr * 0.4, hy + rr * 0.4),
+                     fill=(*NOVA_CORE, 255))
+
+    # Parametric tube — halo then sheath then core.
+    glow, _ = alpha_layer()
+    glow_draw = ImageDraw.Draw(glow)
+    draw = ImageDraw.Draw(image)
+    tube = [n for n in frame.get("tube", []) if n["d"] > 0.02]
+    if len(tube) >= 2:
+        pts = []
+        radii = []
+        for n in tube:
+            sx, sy = world_to_screen(n["x"], n["z"])
+            sy -= n["y"] * 14.0
+            pts.append((sx, sy))
+            radii.append(n["r"])
+        # Halo
+        for i in range(len(pts) - 1):
+            w = max(2, int(2 + radii[i] * 10 * width_fade))
+            glow_draw.line([pts[i], pts[i + 1]], fill=(*NOVA_SHEATH, int(50 * fade)), width=w + 6)
+        # Sheath
+        for i in range(len(pts) - 1):
+            w = max(1, int(1 + radii[i] * 6 * width_fade))
+            draw.line([pts[i], pts[i + 1]], fill=(*NOVA_SHEATH, int(160 * fade)), width=w)
+        # Core
+        for i in range(len(pts) - 1):
+            w = max(1, int(1 + radii[i] * 2.2 * width_fade))
+            draw.line([pts[i], pts[i + 1]], fill=(*NOVA_CORE, int(220 * fade)), width=w)
+    image.alpha_composite(glow.filter(ImageFilter.GaussianBlur(7)))
+    draw = ImageDraw.Draw(image)
+
+    # Shock discs.
+    rings_layer, rdraw = alpha_layer()
+    for r in frame.get("rings", []):
+        if r["a"] < 0.05:
+            continue
+        sx, sy = world_to_screen(r["x"], r["z"])
+        sy -= r["y"] * 14.0
+        outer = max(3.0, r["outer"] * 9.0)
+        inner = max(1.0, r["inner"] * 9.0)
+        alpha = int(200 * r["a"] * fade)
+        rdraw.ellipse((sx - outer, sy - outer * 0.45, sx + outer, sy + outer * 0.45),
+                      outline=(*NOVA_CYAN, alpha), width=2)
+        if outer - inner > 2:
+            rdraw.ellipse((sx - inner, sy - inner * 0.45, sx + inner, sy + inner * 0.45),
+                          outline=(*NOVA_GOLD, max(0, alpha - 40)), width=1)
+    image.alpha_composite(rings_layer.filter(ImageFilter.GaussianBlur(1)))
+    draw = ImageDraw.Draw(image)
+
+    if phase == "Impact":
+        age_i = t - travel_end
+        flash = max(0.0, 0.4 - age_i * 1.2)
+        if flash > 0.0:
+            veil, _ = alpha_layer()
+            ImageDraw.Draw(veil).rectangle(
+                (PLOT_X, PLOT_Y, PLOT_X + PLOT_W, PLOT_Y + PLOT_H),
+                fill=(200, 245, 255, int(flash * 255)))
+            image.alpha_composite(veil)
+
+    # Leading-edge blade while travelling.
+    fx = world_to_screen(0.0, frame["front_pos"][1])[0]
+    if phase == "Travel":
+        front, _ = alpha_layer()
+        fdraw = ImageDraw.Draw(front)
+        fdraw.line((fx, PLOT_Y + 4, fx, PLOT_Y + PLOT_H - 4), fill=(180, 240, 255, 235), width=2)
+        image.alpha_composite(front.filter(ImageFilter.GaussianBlur(4)))
+        draw.line((fx, PLOT_Y + 4, fx, PLOT_Y + PLOT_H - 4), fill=(240, 252, 255, 255), width=1)
+        label = "BEAM FRONT"
+        tw = draw.textlength(label, font=FONT_TINY)
+        lx = fx + 14 if fx + 14 + tw + 12 <= PLOT_X + PLOT_W - 8 else fx - tw - 26
+        ly = PLOT_Y + 40
+        draw.rounded_rectangle((lx - 6, ly, lx + tw + 8, ly + 20),
+                               radius=8, fill=(7, 28, 40, 225), outline=(80, 200, 230, 200))
+        draw.text((lx, ly + 4), label, font=FONT_TINY, fill=(160, 230, 255))
+
+    draw.ellipse((c0[0] - 7, c0[1] - 7, c0[0] + 7, c0[1] + 7),
+                 outline=(160, 230, 255, 255), width=2)
+    draw.ellipse((c0[0] - 2, c0[1] - 2, c0[0] + 2, c0[1] + 2), fill=(*NOVA_CYAN, 255))
+    draw.text((c0[0] - 20, c0[1] + 12), "CASTER", font=FONT_TINY, fill=(100, 170, 200))
+    ic = world_to_screen(frame["impact_pos"][0], frame["impact_pos"][1])
+    draw.ellipse((ic[0] - 9, ic[1] - 9, ic[0] + 9, ic[1] + 9), outline=(160, 230, 255, 200), width=1)
+    draw.text((ic[0] - 18, ic[1] + 13), "IMPACT", font=FONT_TINY, fill=(100, 170, 200))
+
+    bar_y = PLOT_Y + PLOT_H - 62
+    bx0, bx1 = PLOT_X + 40, PLOT_X + PLOT_W - 40
+    draw.line((bx0, bar_y, bx1, bar_y), fill=(40, 100, 130, 255), width=2)
+    for edge, tag in ((charge_end, "C"), (travel_end, "I"), (fade_start, "F")):
+        tx = bx0 + (bx1 - bx0) * edge / total
+        draw.line((tx, bar_y - 5, tx, bar_y + 5), fill=(90, 190, 220, 255), width=1)
+        draw.text((tx - 3, bar_y - 19), tag, font=FONT_TINY, fill=(74, 140, 170))
+    knob = bx0 + (bx1 - bx0) * t / total
+    draw.ellipse((knob - 5, bar_y - 5, knob + 5, bar_y + 5),
+                 fill=(*NOVA_CYAN, 255), outline=(*NOVA_GOLD, 255), width=1)
+
+    nrings = len(frame.get("rings", []))
+    ltext = f"PHASE {phase.upper()}  —  FRONT {frame['front']:04.1f} / {dump['length']:04.1f} M"
+    draw.rounded_rectangle((PLOT_X + 22, PLOT_Y + PLOT_H - 43, PLOT_X + 22 + 340, PLOT_Y + PLOT_H - 16),
+                           radius=12, fill=(7, 28, 40, 220), outline=(40, 130, 160, 200))
+    draw.text((PLOT_X + 38, PLOT_Y + PLOT_H - 37), ltext, font=FONT_TINY, fill=(150, 230, 255))
+    rtext = f"RINGS {nrings:02d}  CHARGE {frame.get('charge', 0):0.2f}  LIGHT {frame['light']['intensity']:04.1f}"
+    rw = draw.textlength(rtext, font=FONT_TINY)
+    draw.rounded_rectangle((PLOT_X + PLOT_W - rw - 38, PLOT_Y + PLOT_H - 43, PLOT_X + PLOT_W - 22, PLOT_Y + PLOT_H - 16),
+                           radius=12, fill=(7, 28, 40, 220), outline=(40, 130, 160, 200))
+    draw.text((PLOT_X + PLOT_W - rw - 30, PLOT_Y + PLOT_H - 37), rtext, font=FONT_TINY, fill=(120, 190, 220))
+
+    draw.text((1018, 625), f"{t:04.1f} / {total:04.1f} SEC", font=FONT_META_BOLD, fill=(100, 200, 230))
+    return image.convert("RGB")
+
+
+def encode_nova_mp4(frames, dump, bounds, output: Path) -> None:
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        raise RuntimeError("ffmpeg is required")
+    command = [
+        ffmpeg, "-loglevel", "error", "-y",
+        "-f", "rawvideo", "-vcodec", "rawvideo", "-pix_fmt", "rgb24",
+        "-s", f"{WIDTH}x{HEIGHT}", "-r", str(FPS), "-i", "-",
+        "-an", "-c:v", "libx264", "-preset", "medium", "-crf", "25",
+        "-profile:v", "high", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+        str(output),
+    ]
+    with subprocess.Popen(command, stdin=subprocess.PIPE) as process:
+        assert process.stdin is not None
+        for i, frame in enumerate(frames):
+            if i % FPS == 0:
+                print(f"nova_beam: frame {i:03d}/{len(frames)}")
+            pixels = np.asarray(nova_frame(frame, dump, bounds), dtype=np.uint8)
+            process.stdin.write(pixels.tobytes())
+        process.stdin.close()
+        if process.wait() != 0:
+            raise RuntimeError("ffmpeg failed while encoding nova_beam.mp4")
+    print(f"{output}: {output.stat().st_size:,} bytes")
+
+
+def render_nova(output: Path, dump_path: Path, regen: bool) -> None:
+    dump = load_nova_dump(dump_path, regen)
+    if dump_path.resolve() != (output / dump_path.name).resolve():
+        shutil.copy(dump_path, output / dump_path.name)
+    frames = dump["frames"]
+    assert len(frames) >= 40, "dump must cover the full lifecycle"
+    assert any(f["phase"] == "Charge" for f in frames), "dump must include Charge"
+    assert any(f["phase"] == "Impact" for f in frames), "dump must reach Impact"
+    assert any(f["phase"] == "Fade" for f in frames), "dump must reach Fade"
+    assert frames[-1]["phase"] == "Done", "dump must run to Done"
+    bounds = nova_phase_boundaries(frames)
+    print(f"nova dump: {len(frames)} frames, "
+          f"total {dump['total_duration']:.2f}s "
+          f"(charge→{bounds[0]:.2f}s, travel→{bounds[1]:.2f}s, fade→{bounds[2]:.2f}s)")
+    mp4 = output / "nova_beam.mp4"
+    encode_nova_mp4(frames, dump, bounds, mp4)
+    encode_gif(mp4, output / "nova_beam.gif")
+
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--ability", choices=("frost", "storm", "cinder", "all"), default="cinder",
-                        help="which cinematic card to render (default: cinder)")
+    parser.add_argument("--ability", choices=("frost", "storm", "cinder", "nova", "all"), default="nova",
+                        help="which cinematic card to render (default: nova)")
     parser.add_argument("--output", type=Path, default=HERE)
     parser.add_argument("--dump", type=Path, default=None,
                         help="override dump path (defaults per ability)")
@@ -927,7 +1225,7 @@ def main() -> None:
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
 
-    abilities = ["frost", "storm", "cinder"] if args.ability == "all" else [args.ability]
+    abilities = ["frost", "storm", "cinder", "nova"] if args.ability == "all" else [args.ability]
     for ability in abilities:
         if ability == "frost":
             dump = args.dump or (HERE / "frost_lance_frames.json")
@@ -935,9 +1233,12 @@ def main() -> None:
         elif ability == "storm":
             dump = args.dump or (HERE / "storm_lance_frames.json")
             render_storm(args.output, dump, args.regen)
-        else:
+        elif ability == "cinder":
             dump = args.dump or (HERE / "cinder_fall_frames.json")
             render_cinder(args.output, dump, args.regen)
+        else:
+            dump = args.dump or (HERE / "nova_beam_frames.json")
+            render_nova(args.output, dump, args.regen)
 
 
 if __name__ == "__main__":

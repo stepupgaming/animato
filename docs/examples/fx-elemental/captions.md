@@ -4,3 +4,5 @@
 `storm_lance.gif` — 640px embeddable preview of the Storm Lance clip for issue #1 / PR #2.
 `cinder_fall.mp4` — Cinematic 1280×720 card demo: Cinder Fall (R) arced meteor from aim lock, ballistic lob down the 12 m line with charge heat, impact detonation with molten fissures racing outward + debris spray, then crater fade. Every transform is sampled from the real `animato-fx-elemental` Rust pipeline via `cinder_fall_frames.json`.
 `cinder_fall.gif` — 640px embeddable preview of the Cinder Fall clip for issue #1 / PR #2.
+`nova_beam.mp4` — Cinematic 1280×720 card demo: Nova Beam (F) from aim lock, charge orb winding up in the hands, leading edge racing the 12 m line as a parametric tube with shock discs, sustain burn at impact, then width-collapse fade. Every transform is sampled from the real `animato-fx-elemental` Rust pipeline via `nova_beam_frames.json`.
+`nova_beam.gif` — 640px embeddable preview of the Nova Beam clip for issue #1 / PR #2.
