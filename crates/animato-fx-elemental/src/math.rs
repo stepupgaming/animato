@@ -53,6 +53,12 @@ pub fn in_cubic(t: f32) -> f32 {
     t * t * t
 }
 
+/// `1 - (1 - t)^3` — charge-orb swell / beam width collapse.
+#[inline]
+pub fn out_cubic(t: f32) -> f32 {
+    1.0 - libm::powf(1.0 - t, 3.0)
+}
+
 /// `1 - (1 - t)^5` — the crystal eruption rise.
 #[inline]
 pub fn out_quint(t: f32) -> f32 {
@@ -88,6 +94,8 @@ mod tests {
         assert_eq!(out_quad(0.0), 0.0);
         assert_eq!(out_quad(1.0), 1.0);
         assert_eq!(in_cubic(1.0), 1.0);
+        assert_eq!(out_cubic(0.0), 0.0);
+        assert_eq!(out_cubic(1.0), 1.0);
         assert_eq!(out_quint(1.0), 1.0);
         assert!((out_quad(0.5) - 0.75).abs() < 1e-6);
         assert!((out_quint(0.5) - 0.96875).abs() < 1e-5);

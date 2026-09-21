@@ -612,6 +612,180 @@ impl crate::aim::AimReach for CinderFallParams {
     }
 }
 
+
+/// Hard ceiling on shock discs (matches `MAX_RINGS` in `BeamAbility.js`).
+pub const MAX_RINGS: usize = 12;
+
+/// Hard ceiling on coil ribbons (matches `MAX_COILS` in `BeamAbility.js`).
+pub const MAX_COILS: usize = 8;
+
+/// Centreline resample count for the parametric beam tube (CPU sample only).
+pub const TUBE_SEGMENTS: usize = 32;
+
+/// Procedural parameters for one Nova Beam cast.
+///
+/// Field defaults reproduce the shipped `settings.beam` look. Only CPU-resolved
+/// dimensions are carried — shader-only tube/coil/orb shading, particle
+/// gradients and decal colours stay in GLSL and are documented in the crate
+/// README mapping.
+#[derive(Clone, Debug, PartialEq)]
+pub struct NovaBeamParams {
+    // ── the cast itself ──
+    /// Maximum cast distance, metres.
+    pub range: f32,
+    /// Casts nearer than this are refused (mirrors the red arrow state).
+    pub min_range: f32,
+    /// Seconds the charge orb winds up before the beam is released.
+    pub charge: f32,
+    /// Leading-edge speed once released, metres/second.
+    pub speed: f32,
+    /// Seconds the beam burns once it lands (Impact / sustain).
+    pub lifetime: f32,
+    /// Seconds it takes to collapse.
+    pub fade_time: f32,
+    /// Seconds before the ability can be armed again.
+    pub cooldown: f32,
+    /// Global speed multiplier (mirrors `settings.global.speed`; `1.0` = off).
+    pub speed_scale: f32,
+    /// Global randomness multiplier (mirrors `settings.global.randomness`).
+    pub randomness: f32,
+
+    // ── where it leaves the caster ──
+    /// Metres above the floor at the hands.
+    pub hand_height: f32,
+    /// Metres in front of the caster.
+    pub hand_forward: f32,
+    /// Metres to the side (+ follows the cast `side`); beam sits on centreline.
+    pub hand_side: f32,
+    /// Height of the beam where it lands, metres.
+    pub end_height: f32,
+
+    // ── the column (CPU radius profile) ──
+    /// Half-width at the muzzle, metres.
+    pub radius_near: f32,
+    /// Half-width at the target, metres.
+    pub radius: f32,
+    /// `<1` opens out early, `>1` stays tight then flares late.
+    pub radius_curve: f32,
+    /// Extra swell where it lands.
+    pub flare: f32,
+    /// How much of the span that swell covers, `0..1`.
+    pub flare_width: f32,
+
+    // ── shock discs (dice + sample) ──
+    /// Discs in flight (capped at [`MAX_RINGS`]).
+    pub rings: f32,
+    /// Trips down the beam per second.
+    pub ring_speed: f32,
+    /// Inner lip, × the local column radius.
+    pub ring_inner: f32,
+    /// Outer lip, × the local column radius.
+    pub ring_outer: f32,
+    /// How much they open out as they travel.
+    pub ring_swell: f32,
+    /// How much is left of one by the time it lands.
+    pub ring_fade: f32,
+
+    // ── charge orb (CPU size) ──
+    /// Orb radius once up to power, metres.
+    pub orb_size: f32,
+    /// How hard it pulses.
+    pub orb_throb: f32,
+    /// Orb throb cycles/second.
+    pub orb_throb_speed: f32,
+
+    // ── dynamic light ──
+    /// Base intensity of the beam light.
+    pub light_intensity: f32,
+    /// Radius of the beam light, metres.
+    pub light_radius: f32,
+    /// Depth of the light's hum, `0` = steady.
+    pub light_pulse: f32,
+    /// Light hum pulses/second.
+    pub light_pulse_speed: f32,
+    /// Intensity of the muzzle light in the hands.
+    pub muzzle_light_intensity: f32,
+    /// Radius of the muzzle light, metres.
+    pub muzzle_light_radius: f32,
+}
+
+impl Default for NovaBeamParams {
+    fn default() -> Self {
+        Self {
+            range: 26.0,
+            min_range: 3.0,
+            charge: 0.42,
+            speed: 150.0,
+            lifetime: 1.15,
+            fade_time: 0.4,
+            cooldown: 1.6,
+            speed_scale: 1.0,
+            randomness: 1.0,
+
+            hand_height: 1.3,
+            hand_forward: 0.72,
+            hand_side: 0.0,
+            end_height: 1.0,
+
+            radius_near: 0.16,
+            radius: 0.77,
+            radius_curve: 1.27,
+            flare: 1.74,
+            flare_width: 0.09,
+
+            rings: 10.0,
+            ring_speed: 1.31,
+            ring_inner: 2.42,
+            ring_outer: 2.73,
+            ring_swell: 0.55,
+            ring_fade: 0.18,
+
+            orb_size: 0.39,
+            orb_throb: 0.11,
+            orb_throb_speed: 6.9,
+
+            light_intensity: 30.0,
+            light_radius: 20.0,
+            light_pulse: 0.18,
+            light_pulse_speed: 5.0,
+            muzzle_light_intensity: 16.0,
+            muzzle_light_radius: 9.0,
+        }
+    }
+}
+
+impl NovaBeamParams {
+    /// How many shock discs a cast spends: `clamp(round(rings), 1, 12)`.
+    pub fn ring_budget(&self) -> usize {
+        libm::roundf(self.rings).clamp(1.0, MAX_RINGS as f32) as usize
+    }
+
+    /// Seconds the orb winds up (`max(0.01, charge)`).
+    pub fn charge_duration(&self) -> f32 {
+        self.charge.max(0.01)
+    }
+
+    /// Seconds the beam burns once the front arrives (`max(0.05, lifetime)`).
+    pub fn impact_duration(&self) -> f32 {
+        self.lifetime.max(0.05)
+    }
+
+    /// Seconds the beam takes to collapse (`max(0.05, fade_time)`).
+    pub fn fade_duration(&self) -> f32 {
+        self.fade_time.max(0.05)
+    }
+}
+
+impl crate::aim::AimReach for NovaBeamParams {
+    fn cast_range(&self) -> f32 {
+        self.range
+    }
+
+    fn cast_min_range(&self) -> f32 {
+        self.min_range
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -742,5 +916,48 @@ mod tests {
         };
         assert_eq!(flat.impact_duration(), 0.2);
         assert_eq!(flat.fade_duration(), 0.2);
+    }
+
+
+    #[test]
+    fn beam_defaults_match_shipped_settings() {
+        let p = NovaBeamParams::default();
+        assert_eq!(p.range, 26.0);
+        assert_eq!(p.min_range, 3.0);
+        assert_eq!(p.charge, 0.42);
+        assert_eq!(p.speed, 150.0);
+        assert_eq!(p.lifetime, 1.15);
+        assert_eq!(p.fade_time, 0.4);
+        assert_eq!(p.radius_near, 0.16);
+        assert_eq!(p.radius, 0.77);
+        assert_eq!(p.radius_curve, 1.27);
+        assert_eq!(p.flare, 1.74);
+        assert_eq!(p.rings, 10.0);
+        assert_eq!(p.ring_speed, 1.31);
+        assert_eq!(p.orb_size, 0.39);
+        assert_eq!(p.light_intensity, 30.0);
+        assert_eq!(p.muzzle_light_intensity, 16.0);
+        assert_eq!(p.ring_budget(), 10);
+    }
+
+    #[test]
+    fn nova_budgets_and_floors() {
+        let mut p = NovaBeamParams::default();
+        p.rings = 100.0;
+        assert_eq!(p.ring_budget(), MAX_RINGS);
+        p.rings = 0.0;
+        assert_eq!(p.ring_budget(), 1);
+        assert!((p.charge_duration() - 0.42).abs() < f32::EPSILON);
+        assert!((p.impact_duration() - 1.15).abs() < f32::EPSILON);
+        assert!((p.fade_duration() - 0.4).abs() < f32::EPSILON);
+        let flat = NovaBeamParams {
+            charge: 0.0,
+            lifetime: 0.0,
+            fade_time: 0.0,
+            ..NovaBeamParams::default()
+        };
+        assert_eq!(flat.charge_duration(), 0.01);
+        assert_eq!(flat.impact_duration(), 0.05);
+        assert_eq!(flat.fade_duration(), 0.05);
     }
 }

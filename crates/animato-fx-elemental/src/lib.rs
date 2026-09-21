@@ -9,19 +9,21 @@
 //!   bundle with restrike (ThunderAbility port).
 //! - [`CinderFall`] / [`CinderFallParams`] — Cinder Fall (R) arced meteor with
 //!   impact debris and molten fissures (MeteorAbility port).
+//! - [`NovaBeam`] / [`NovaBeamParams`] — Nova Beam (F) charge + sustained
+//!   parametric tube with shock discs (BeamAbility port).
 //! - Time-driven: `seek_abs` re-simulates deterministically, so every pipeline
 //!   is drivable by `animato_composition::Composition` and
 //!   `animato_timeline::Timeline::seek_abs` — including while paused, with
 //!   params edited live (records store dice only; metres resolve at sample
 //!   time).
-//! - All three implement [`animato_core::Playable`] (`Send + 'static`).
+//! - All four implement [`animato_core::Playable`] (`Send + 'static`).
 //!
 //! ## Quick Start
 //!
 //! ```rust
 //! use animato_fx_elemental::{
-//!     CinderFall, CinderFallParams, FrostLance, FrostLanceParams, StormLance,
-//!     StormLanceParams,
+//!     CinderFall, CinderFallParams, FrostLance, FrostLanceParams, NovaBeam,
+//!     NovaBeamParams, StormLance, StormLanceParams,
 //! };
 //!
 //! let mut frost = FrostLance::with_params(FrostLanceParams::default());
@@ -38,6 +40,11 @@
 //! cinder.cast([0.0, 0.0], [0.0, 1.0], 12.0, 7).unwrap();
 //! cinder.seek_abs(0.5);
 //! assert!(cinder.rock().visible);
+//!
+//! let mut nova = NovaBeam::with_params(NovaBeamParams::default());
+//! nova.cast([0.0, 0.0], [0.0, 1.0], 12.0, 7).unwrap();
+//! nova.seek_abs(0.2);
+//! assert_eq!(nova.phase(), animato_fx_elemental::Phase::Charge);
 //! ```
 //!
 //! ## Attribution
@@ -50,7 +57,7 @@
 //!
 //! ## Scope
 //!
-//! Frost Lance, Storm Lance and Cinder Fall are in-crate. Nova Beam and
+//! Frost Lance, Storm Lance, Cinder Fall and Nova Beam are in-crate.
 //! Voltaic Snare — plus any Ext/Extended sandboxes — are follow-ups (see
 //! README).
 //!
@@ -74,6 +81,7 @@ pub mod spike;
 pub mod storm;
 pub mod cinder;
 pub mod fissure;
+pub mod nova;
 
 #[cfg(feature = "wgpu")]
 pub mod gpu;
@@ -82,8 +90,8 @@ pub use aim::{AimReach, AimSolution, solve_aim};
 pub use filament::{StrandNode, StrandRecord, StrandSample, roll_strands};
 pub use params::{
     CinderFallParams, FISSURE_STEP, FrostLanceParams, IMPACT_FRACTION, MAX_CHUNKS,
-    MAX_FISSURE_ARMS, MAX_FISSURE_BRANCHES, MAX_SPIKES, MAX_STRANDS, STRAND_NODES,
-    StormLanceParams,
+    MAX_COILS, MAX_FISSURE_ARMS, MAX_FISSURE_BRANCHES, MAX_RINGS, MAX_SPIKES,
+    MAX_STRANDS, NovaBeamParams, STRAND_NODES, StormLanceParams, TUBE_SEGMENTS,
 };
 pub use pipeline::{FrostEvent, FrostLance, FrostLight, Phase, SpawnError, SEEK_STEP};
 pub use rng::FxRng;
@@ -94,4 +102,8 @@ pub use fissure::{
     ChunkRecord, ChunkSample, FissureArmRecord, FissureBranchRecord, FissureNode,
     FissureSample, arc_point, heading_at, roll_chunks, roll_fissures, sample_chunk,
     sample_fissures,
+};
+pub use nova::{
+    NovaBeam, NovaEvent, NovaLight, OrbSample, RingRecord, RingSample, TubeNode,
+    axis_point as beam_axis_point, beam_radius, roll_rings, sample_ring,
 };

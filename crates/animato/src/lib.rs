@@ -97,7 +97,7 @@
 //! | `macro` | Declarative `animato!{}` Motion Macro DSL |
 //! | `composition` | [`Composition`], [`Track`], [`Clip`] seekable track/clip composition |
 //! | `procgen` | Procedural-geometry edge crate: Delaunay, Voronoi, Lloyd, Poisson-disk, Worley, starter caustics |
-//! | `fx-elemental` (`elemental` alias) | Elemental-VFX edge crate: seekable Frost Lance + Storm Lance + Cinder Fall pipelines |
+//! | `fx-elemental` (`elemental` alias) | Elemental-VFX edge crate: seekable Frost Lance + Storm Lance + Cinder Fall + Nova Beam pipelines |
 //! | `tokio` | [`Timeline::wait()`] async completion waiting |
 //! | `serde` | `Serialize`/`Deserialize` on all public types |
 
@@ -269,12 +269,14 @@ pub use animato_fx_elemental::{
     AimReach, AimSolution, CinderEvent, CinderFall, CinderFallParams, CinderLight,
     ChunkRecord, ChunkSample, FISSURE_STEP, FissureArmRecord, FissureBranchRecord,
     FissureNode, FissureSample, FrostEvent, FrostLance, FrostLanceParams, FrostLight,
-    FxRng, IMPACT_FRACTION, MAX_CHUNKS, MAX_FISSURE_ARMS, MAX_FISSURE_BRANCHES,
-    MAX_SPIKES, MAX_STRANDS, Phase as FrostPhase, RockSample, SEEK_STEP, STRAND_NODES,
-    SpawnError as FrostSpawnError, SpikeRecord, SpikeSample, StormEvent, StormLance,
-    StormLanceParams, StormLight, StrandNode, StrandRecord, StrandSample, arc_point,
-    heading_at, roll_chunks, roll_fissures, roll_spikes, roll_strands, sample_chunk,
-    sample_fissures, solve_aim,
+    FxRng, IMPACT_FRACTION, MAX_CHUNKS, MAX_COILS, MAX_FISSURE_ARMS, MAX_FISSURE_BRANCHES,
+    MAX_RINGS, MAX_SPIKES, MAX_STRANDS, NovaBeam, NovaBeamParams, NovaEvent, NovaLight,
+    OrbSample, Phase as FrostPhase, RingRecord, RingSample, RockSample, SEEK_STEP,
+    STRAND_NODES, SpawnError as FrostSpawnError, SpikeRecord, SpikeSample, StormEvent,
+    StormLance, StormLanceParams, StormLight, StrandNode, StrandRecord, StrandSample,
+    TUBE_SEGMENTS, TubeNode, arc_point, beam_axis_point, beam_radius, heading_at,
+    roll_chunks, roll_fissures, roll_rings, roll_spikes, roll_strands, sample_chunk,
+    sample_fissures, sample_ring, solve_aim,
 };
 
 /// Prelude module with macro-friendly re-exports.
@@ -343,10 +345,13 @@ pub mod prelude {
         AimReach, AimSolution, CinderEvent, CinderFall, CinderFallParams, CinderLight,
         ChunkRecord, ChunkSample, FISSURE_STEP, FissureArmRecord, FissureBranchRecord,
         FissureNode, FissureSample, FrostEvent, FrostLance, FrostLanceParams, FrostLight,
-        FrostPhase, FrostSpawnError, FxRng, IMPACT_FRACTION, MAX_CHUNKS, MAX_FISSURE_ARMS,
-        MAX_FISSURE_BRANCHES, MAX_SPIKES, MAX_STRANDS, RockSample, SEEK_STEP, STRAND_NODES,
-        SpikeRecord, SpikeSample, StormEvent, StormLance, StormLanceParams, StormLight,
-        StrandNode, StrandRecord, StrandSample, arc_point, heading_at, roll_chunks,
-        roll_fissures, roll_spikes, roll_strands, sample_chunk, sample_fissures, solve_aim,
+        FrostPhase, FrostSpawnError, FxRng, IMPACT_FRACTION, MAX_CHUNKS, MAX_COILS,
+        MAX_FISSURE_ARMS, MAX_FISSURE_BRANCHES, MAX_RINGS, MAX_SPIKES, MAX_STRANDS,
+        NovaBeam, NovaBeamParams, NovaEvent, NovaLight, OrbSample, RingRecord, RingSample,
+        RockSample, SEEK_STEP, STRAND_NODES, SpikeRecord, SpikeSample, StormEvent,
+        StormLance, StormLanceParams, StormLight, StrandNode, StrandRecord, StrandSample,
+        TUBE_SEGMENTS, TubeNode, arc_point, beam_axis_point, beam_radius, heading_at,
+        roll_chunks, roll_fissures, roll_rings, roll_spikes, roll_strands, sample_chunk,
+        sample_fissures, sample_ring, solve_aim,
     };
 }

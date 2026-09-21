@@ -69,10 +69,12 @@ traits: it must land as an optional edge crate with unchanged defaults.
    `StormLanceParams` / `filament.rs` — ThunderAbility port with restrike
    polylines). **Cinder Fall (R)** is now in-crate (`CinderFall` /
    `CinderFallParams` / `fissure.rs` — MeteorAbility port with ballistic arc,
-   chunk ballistics and molten fissures). Remaining sandbox abilities (Nova
-   Beam, Voltaic Snare), Ext / Extended sandboxes, and a full `wgpu` renderer
-   backend (particles, decals, ice/lightning/meteor shading) are not started
-   here.
+   chunk ballistics and molten fissures). **Nova Beam (F)** is now in-crate
+   (`NovaBeam` / `NovaBeamParams` / `nova.rs` — BeamAbility port with
+   first-class `Phase::Charge`, parametric tube and shock-disc train).
+   Remaining sandbox abilities (Voltaic Snare), Ext / Extended sandboxes,
+   and a full `wgpu` renderer backend (particles, decals,
+   ice/lightning/meteor/beam shading) are not started here.
 
 ## Consequences
 

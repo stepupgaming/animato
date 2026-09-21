@@ -272,7 +272,7 @@ impl StormLance {
                 let t = saturate(self.fade_time / self.params.fade_duration());
                 1.0 - in_cubic(t)
             }
-            Phase::Idle | Phase::Done => 0.0,
+            Phase::Idle | Phase::Charge | Phase::Done => 0.0,
         }
     }
 
@@ -351,7 +351,7 @@ impl StormLance {
                     self.events.push(StormEvent::Done);
                 }
             }
-            Phase::Idle | Phase::Done => {}
+            Phase::Idle | Phase::Charge | Phase::Done => {}
         }
     }
 
@@ -379,7 +379,7 @@ impl StormLance {
                 let t = saturate(self.fade_time / self.params.fade_duration());
                 (1.0 - t) * 0.35
             }
-            Phase::Idle | Phase::Done => 0.0,
+            Phase::Idle | Phase::Charge | Phase::Done => 0.0,
         }
     }
 

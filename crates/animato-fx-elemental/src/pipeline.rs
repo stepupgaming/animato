@@ -38,6 +38,8 @@ pub enum Phase {
     /// No cast spawned yet, or returned to the pool.
     #[default]
     Idle,
+    /// Nova Beam wind-up: charge orb building in the hands (front held).
+    Charge,
     /// The fracture front is racing down the line.
     Travel,
     /// The front has arrived; the field stands.
@@ -390,7 +392,7 @@ impl FrostLance {
                     self.events.push(FrostEvent::Done);
                 }
             }
-            Phase::Idle | Phase::Done => {}
+            Phase::Idle | Phase::Charge | Phase::Done => {}
         }
     }
 
@@ -421,7 +423,7 @@ impl FrostLance {
                 let t = saturate(self.fade_time / self.params.fade_duration());
                 (1.0 - t) * 0.35
             }
-            Phase::Idle | Phase::Done => 0.0,
+            Phase::Idle | Phase::Charge | Phase::Done => 0.0,
         };
         let p = self.front_position();
         FrostLight {

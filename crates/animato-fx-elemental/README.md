@@ -2,7 +2,7 @@
 
 Optional elemental-VFX edge crate for Animato (pure Rust, no browser /
 Three.js required): seekable, time-driven ports of **line-cast ability pipelines** —
-**Frost Lance (Q)**, **Storm Lance (E)** and **Cinder Fall (R)** — from
+**Frost Lance (Q)**, **Storm Lance (E)**, **Cinder Fall (R)** and **Nova Beam (F)** — from
 achrefelouafi's `LinearAbiltyCastingThreeJS` sandbox (MIT).
 
 It contains no renderer: the pipeline resolves every spike transform, the
@@ -42,17 +42,23 @@ drive, and it ports without raymarching, ribbon strips or parametric tubes.
 | `src/abilities/MeteorAbility.js` — ballistic arc, charge heat, chunk ballistics, tumble | `src/cinder.rs` + `src/fissure.rs` | Volumetric trail / particles / bursts / rock material stay renderer-owned; CPU samples expose arc + chunks + `CinderEvent` + `CinderLight` |
 | `src/effects/GroundFissures.js` — unit-space crack network, growth, branch cull | `src/fissure.rs` (`roll_fissures`, `sample_fissures`) | Dice-only arm/branch records; `fissure_radius` / branch density re-scale at sample time |
 | `src/config/settings.js` — `meteor` block | `src/params.rs::CinderFallParams` (`Default` = shipped values) | CPU-resolved dims only; trail volume / particle gradients / geometry bake stay GLSL downstream |
+| `src/abilities/BeamAbility.js` — charge hold, hand/impact tube axis, ring train, dual lights, sustain burn | `src/nova.rs` | Tube/coil/orb materials / particles / decals / bursts stay renderer-owned; CPU samples expose tube + rings + orb + `NovaEvent` + `NovaLight` |
+| `src/config/settings.js` — `beam` block | `src/params.rs::NovaBeamParams` (`Default` = shipped values) | CPU-resolved dims only; colours / particle rates / coil ribbons stay GLSL downstream |
+| `src/assets/ProceduralGeometry.js` — beam tube / ring annulus | *Downstream renderer* | `TubeNode` / `RingSample` expose radii; geometry bake stays renderer-owned |
 
 ## Time model
 
 - `FrostLance::update(dt)` — live playback (frame-rate independent, like `Ability#update`).
 - `FrostLance::seek_abs(t)` / `StormLance::seek_abs(t)` /
-  `CinderFall::seek_abs(t)` — deterministic re-simulation from spawn at a
-  fixed 1/480 s step (`SEEK_STEP`): same `(seed, params, time)` ⇒ same
-  state. Storm Lance additionally re-rolls filament shape from
-  `seed + floor(age * restrike)` at sample time; Cinder Fall resolves the
-  ballistic arc, chunk flights and fissure polylines at sample time.
-- All three implement `animato_core::{Playable, Update}` (`Send +
+  `CinderFall::seek_abs(t)` / `NovaBeam::seek_abs(t)` — deterministic
+  re-simulation from spawn at a fixed 1/480 s step (`SEEK_STEP`): same
+  `(seed, params, time)` ⇒ same state. Storm Lance additionally re-rolls
+  filament shape from `seed + floor(age * restrike)` at sample time;
+  Cinder Fall resolves the ballistic arc, chunk flights and fissure
+  polylines at sample time; Nova Beam resolves the parametric tube,
+  shock-disc train and charge orb at sample time (with a first-class
+  `Phase::Charge` before travel).
+- All four implement `animato_core::{Playable, Update}` (`Send +
   'static`), so they compose directly:
 
 ```rust
@@ -83,8 +89,8 @@ GPU-free so `cargo test` needs no GPU. A full `wgpu` renderer backend
 ## Design record
 
 See [ADR 0003](../../docs/adr/0003-optional-fx-elemental-crate.md) (extends
-ADR 0001 / 0002): why Frost Lance (Q) was the first ability, with Storm Lance (E)
-and Cinder Fall (R) as in-crate follow-ups, the seekable/`Playable` contract,
+ADR 0001 / 0002): why Frost Lance (Q) was the first ability, with Storm Lance (E),
+Cinder Fall (R) and Nova Beam (F) as in-crate follow-ups, the seekable/`Playable` contract,
 the renderer-owned split, and why the thin `wgpu` instance-layout stub is
 intentional.
 
@@ -97,9 +103,8 @@ parameter defaults, re-expressed in renderer-agnostic Rust.
 
 ## Follow-ups (not started)
 
-- Remaining sandbox abilities: **Nova Beam** (parametric tube + charge
-  phase), **Voltaic Snare** (far-cast circle + ribbon cage). **Storm Lance**
-  and **Cinder Fall** are now in-crate.
+- Remaining sandbox abilities: **Voltaic Snare** (far-cast circle + ribbon
+  cage). **Storm Lance**, **Cinder Fall** and **Nova Beam** are now in-crate.
 - Ext / Extended sandboxes.
 - Full `wgpu` renderer backend (particles, decals, ice shading) behind the
   `wgpu` feature; default build stays GPU-free so `cargo test` needs no GPU.

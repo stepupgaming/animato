@@ -328,7 +328,7 @@ impl CinderFall {
         match self.phase {
             Phase::Impact => self.impact_time,
             Phase::Fade | Phase::Done => self.params.impact_duration() + self.fade_time,
-            Phase::Travel | Phase::Idle => 0.0,
+            Phase::Travel | Phase::Idle | Phase::Charge => 0.0,
         }
     }
 
@@ -416,7 +416,7 @@ impl CinderFall {
                     self.events.push(CinderEvent::Done);
                 }
             }
-            Phase::Idle | Phase::Done => {}
+            Phase::Idle | Phase::Charge | Phase::Done => {}
         }
     }
 
@@ -444,7 +444,7 @@ impl CinderFall {
                 let t = saturate(self.fade_time / self.params.fade_duration());
                 (1.0 - t) * 0.4
             }
-            Phase::Idle | Phase::Done => 0.0,
+            Phase::Idle | Phase::Charge | Phase::Done => 0.0,
         }
     }
 
