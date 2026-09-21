@@ -1,4 +1,4 @@
-`voronoi_lloyd.mp4` — Voronoi cells tighten as 18 sites relax toward a centroidal Lloyd configuration.
-`delaunay.mp4` — A moving set of sites updates its Delaunay triangulation and adjacency edges in real time.
-`poisson_worley.mp4` — Poisson-disk feature points drive a glowing nearest-site Worley distance field.
-`caustics.mp4` — Three animated analytical ripple sources accumulate into a looping caustic-like intensity field.
+`voronoi_lloyd.mp4` — Cinematic 1280×720 card demo: Voronoi cells visibly relax as sites travel toward their Lloyd centroids.
+`delaunay.mp4` — Cinematic 1280×720 card demo: a moving Delaunay triangle mesh is shown together with its Voronoi-dual circumcenter links.
+`poisson_worley.mp4` — Cinematic 1280×720 card demo: minimum-distance Poisson samples appear, then light up a nearest-feature Worley field.
+`caustics.mp4` — Cinematic 1280×720 card demo: coupled shallow-water waves produce animated cyan caustic ribbons and focused highlights.
