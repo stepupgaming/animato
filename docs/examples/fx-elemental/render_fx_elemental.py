@@ -2,12 +2,12 @@
 """Render cinematic 1280x720 Elemental Lab product-demo clips.
 
 Every transform comes from the REAL Rust pipeline dumps
-(``dump_frost_lance`` / ``dump_storm_lance``). This script only handles
-presentation — dark glassy card UI, ice/cyan or storm/blue palette,
-ffmpeg H.264 + GIF for issue embeds.
+(``dump_frost_lance`` / ``dump_storm_lance`` / ``dump_cinder_fall``).
+This script only handles presentation — dark glassy card UI, ice/cyan,
+storm/blue or cinder/ember palette, ffmpeg H.264 + GIF for issue embeds.
 
 Usage:
-    python3 render_fx_elemental.py [--ability frost|storm|all] [--output DIR] [--regen]
+    python3 render_fx_elemental.py [--ability frost|storm|cinder|all] [--output DIR] [--regen]
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ GRID = (23, 44, 71, 115)
 # the 12 m line so the terminal impact cluster (up to ~3 m past the far end)
 # stays inside the card.
 Z_MIN, Z_MAX = -2.0, 15.5
-X_HALF = 4.2
+X_HALF = 5.8
 
 
 def load_font(size: int, bold: bool = False):
@@ -645,10 +645,280 @@ def render_storm(output: Path, dump_path: Path, regen: bool) -> None:
     encode_gif(mp4, output / "storm_lance.gif")
 
 
+
+# ── Cinder Fall (R) ──────────────────────────────────────────────────────────
+
+CINDER_SUBTITLES = {
+    "Travel": "burning rock lofting — charge heat building on the arc",
+    "Impact": "detonation — molten fissures racing + debris ballistic spray",
+    "Fade": "crater cooling — chunks sinking, cracks fading",
+    "Done": "pipeline complete — ready for the next cast",
+    "Idle": "aim solution locked — cast armed",
+}
+
+CINDER_CHIPS = {
+    "Travel": "TRAVEL — BALLISTIC ARC",
+    "Impact": "IMPACT — CRATER BURNING",
+    "Fade": "FADE — WITHDRAWAL",
+    "Done": "DONE",
+    "Idle": "AIM — CAST ARMED",
+}
+
+EMBER = (255, 138, 60)
+HOT_CINDER = (255, 243, 208)
+CORE_FIRE = (255, 106, 18)
+CHAR = (40, 28, 22)
+
+
+def load_cinder_dump(dump_path: Path, regen: bool) -> dict:
+    if regen or not dump_path.exists() or dump_path.stat().st_size == 0:
+        cargo = shutil.which("cargo")
+        if cargo is None:
+            raise RuntimeError("cargo is required to regenerate the frame dump")
+        print(f"regenerating {dump_path} via dump_cinder_fall example…")
+        subprocess.run(
+            [cargo, "run", "-q", "-p", "animato-fx-elemental",
+             "--example", "dump_cinder_fall", "--", str(dump_path)],
+            cwd=REPO_ROOT,
+            check=True,
+        )
+    with open(dump_path) as f:
+        return json.load(f)
+
+
+def cinder_base_scene(kicker, title, subtitle, chip, right_meta):
+    image = BACKGROUND.copy()
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((68, 48, 1212, 672), radius=22, fill=CARD, outline=(70, 40, 28, 230), width=2)
+    draw.line((96, 166, 1184, 166), fill=(80, 45, 30, 190), width=1)
+    draw.text((120, 78), kicker, font=FONT_KICKER, fill=(255, 150, 80))
+    draw.text((120, 101), title, font=FONT_TITLE, fill=(255, 236, 220))
+    draw.text((120, 140), subtitle, font=FONT_SUBTITLE, fill=(166, 120, 95))
+    chip_w = max(130, int(draw.textlength(chip, font=FONT_CHIP) + 48))
+    chip_x = 1160 - chip_w
+    draw.rounded_rectangle((chip_x, 91, 1160, 125), radius=17, fill=(55, 22, 12, 245), outline=(200, 100, 50, 220), width=1)
+    draw.ellipse((chip_x + 14, 103, chip_x + 21, 110), fill=EMBER)
+    draw.text((chip_x + 31, 99), chip, font=FONT_CHIP, fill=(255, 200, 150))
+
+    draw.rounded_rectangle((PLOT_X - 1, PLOT_Y - 1, PLOT_X + PLOT_W + 1, PLOT_Y + PLOT_H + 1), radius=12,
+                           fill=(18, 10, 8, 242), outline=(90, 45, 30, 255), width=2)
+    for x in range(PLOT_X + 40, PLOT_X + PLOT_W, 80):
+        draw.line((x, PLOT_Y + 2, x, PLOT_Y + PLOT_H - 2), fill=(50, 28, 20, 115), width=1)
+    for y in range(PLOT_Y + 40, PLOT_Y + PLOT_H, 56):
+        draw.line((PLOT_X + 2, y, PLOT_X + PLOT_W - 2, y), fill=(50, 28, 20, 115), width=1)
+    draw.text((PLOT_X + 22, PLOT_Y + 16), "LIVE PREVIEW  —  FROM RUST DUMP", font=FONT_PLOT, fill=(180, 110, 70))
+    draw.text((PLOT_X + PLOT_W - 150, PLOT_Y + 16), right_meta, font=FONT_TINY, fill=(140, 90, 60))
+    draw.text((120, 625), "ANIMATO  /  ELEMENTAL LAB", font=FONT_META_BOLD, fill=(150, 95, 65))
+    draw.text((370, 625), "CINDER FALL (R)  —  SEEDED, SEEKABLE PIPELINE", font=FONT_META, fill=(120, 80, 55))
+    return image, ImageDraw.Draw(image)
+
+
+def cinder_frame(frame: dict, dump: dict, bounds: tuple[float, float, float]) -> Image.Image:
+    travel_end, fade_start, total = bounds
+    phase = frame["phase"]
+    t = frame["t"]
+    image, _ = cinder_base_scene(
+        "ELEMENTAL SANDBOX  /  CINDER FALL (R)",
+        "CINDER FALL",
+        CINDER_SUBTITLES.get(phase, ""),
+        CINDER_CHIPS.get(phase, phase.upper()),
+        "SEED 7  /  SEEKABLE",
+    )
+
+    # Ember wash along the travelled arc.
+    wash, wash_draw = alpha_layer()
+    prog_z = frame["front_pos"][1] if phase == "Travel" else frame["impact_pos"][1]
+    _, front_z = world_to_screen(0.0, prog_z)
+    wash_draw.rectangle((PLOT_X, PLOT_Y, front_z, PLOT_Y + PLOT_H), fill=(180, 60, 20, 40))
+    image.alpha_composite(wash.filter(ImageFilter.GaussianBlur(14)))
+
+    c0 = world_to_screen(0.0, 0.0)
+    c1 = world_to_screen(0.0, frame["impact_pos"][1])
+    ImageDraw.Draw(image).line((c0, c1), fill=(90, 50, 30, 255), width=1)
+
+    if t < 0.35:
+        overlay, odraw = alpha_layer()
+        steps = 24
+        for i in range(steps):
+            s0 = i / steps
+            s1 = (i + 0.55) / steps
+            if i % 2 == 0:
+                p0 = (c0[0] + (c1[0] - c0[0]) * s0, c0[1])
+                p1 = (c0[0] + (c1[0] - c0[0]) * min(s1, 1.0), c0[1])
+                odraw.line((p0, p1), fill=(255, 170, 100, 235), width=2)
+        odraw.polygon([(c1[0], c1[1] - 9), (c1[0] + 14, c1[1]), (c1[0], c1[1] + 9)], fill=(255, 170, 100, 235))
+        image.alpha_composite(overlay)
+        draw = ImageDraw.Draw(image)
+        tag = "AIM LOCKED — 12.0 M"
+        tw = draw.textlength(tag, font=FONT_TINY)
+        draw.rounded_rectangle((c0[0] - 8, c0[1] - 44, c0[0] + tw + 24, c0[1] - 20),
+                               radius=9, fill=(40, 16, 8, 230), outline=(255, 140, 70, 220))
+        draw.text((c0[0] + 8, c0[1] - 39), tag, font=FONT_TINY, fill=(255, 190, 130))
+
+    if phase == "Impact":
+        age_i = t - travel_end
+        flash = max(0.0, 0.55 - age_i * 1.1)
+        if flash > 0.0:
+            veil, _ = alpha_layer()
+            ImageDraw.Draw(veil).rectangle(
+                (PLOT_X, PLOT_Y, PLOT_X + PLOT_W, PLOT_Y + PLOT_H),
+                fill=(255, 200, 120, int(flash * 255)))
+            image.alpha_composite(veil)
+        ip = world_to_screen(frame["impact_pos"][0], frame["impact_pos"][1])
+        rings, rdraw = alpha_layer()
+        for k in range(3):
+            rk = age_i * 140.0 - k * 26.0
+            if rk > 6.0:
+                rdraw.ellipse((ip[0] - rk, ip[1] - rk * 0.55, ip[0] + rk, ip[1] + rk * 0.55),
+                              outline=(255, 160, 80, max(0, int(210 - age_i * 160 - k * 40))), width=2)
+        image.alpha_composite(rings.filter(ImageFilter.GaussianBlur(2)))
+
+    glow, _ = alpha_layer()
+    glow_draw = ImageDraw.Draw(glow)
+    draw = ImageDraw.Draw(image)
+
+    # Fissure polylines (floor cracks) — under the rock/chunks.
+    for f in frame.get("fissures", []):
+        nodes = [n for n in f["nodes"] if n.get("g", 1) > 0.05]
+        if len(nodes) < 2:
+            continue
+        pts = [world_to_screen(n["x"], n["z"]) for n in nodes]
+        if len(pts) < 2:
+            continue
+        rank = f.get("rank", 0.0)
+        alpha = int(160 if rank == 0 else 110)
+        col = lerp3(CORE_FIRE, HOT_CINDER, 0.35 if rank == 0 else 0.1)
+        w = max(1, int(2 + (1.0 - rank) * 2))
+        glow_draw.line(pts, fill=(*col, max(40, alpha // 2)), width=w + 3)
+        draw.line(pts, fill=(*col, alpha), width=w)
+
+    # Debris chunks.
+    for ch in frame.get("chunks", []):
+        sx, sy = world_to_screen(ch["x"], ch["z"])
+        sy -= ch["y"] * 12.0
+        rr = max(2.0, ch["r"] * 14.0)
+        heat = clamp(ch.get("heat", 0.0), 0.0, 1.0)
+        col = lerp3(CHAR, EMBER, heat)
+        draw.ellipse((sx - rr, sy - rr * 0.7, sx + rr, sy + rr * 0.7), fill=(*col, 220))
+        if heat > 0.2:
+            glow_draw.ellipse((sx - rr * 1.6, sy - rr * 1.2, sx + rr * 1.6, sy + rr * 1.2),
+                              fill=(*EMBER, int(70 * heat)))
+
+    # Rock on the arc.
+    rock = frame.get("rock", {})
+    if rock.get("visible"):
+        sx, sy = world_to_screen(rock["x"], rock["z"])
+        sy -= rock["y"] * 14.0
+        rr = max(4.0, rock["r"] * 16.0)
+        charge = clamp(rock.get("charge", 0.0), 0.0, 1.0)
+        col = lerp3((90, 80, 70), EMBER, 0.35 + 0.65 * charge)
+        glow_draw.ellipse((sx - rr * 2.2, sy - rr * 2.2, sx + rr * 2.2, sy + rr * 2.2),
+                          fill=(*EMBER, int(50 + 80 * charge)))
+        draw.ellipse((sx - rr, sy - rr, sx + rr, sy + rr), fill=(*col, 255))
+        # Hot core
+        cr = rr * 0.35
+        draw.ellipse((sx - cr, sy - cr, sx + cr, sy + cr),
+                     fill=(*lerp3(col, HOT_CINDER, charge), 255))
+        # Arc trail ghost behind the rock
+        trail, tdraw = alpha_layer()
+        for k in range(8):
+            s = max(0.0, frame["progress"] - k * 0.03)
+            # approximate from rock position only for presentation
+            px = rock["x"]
+            pz = rock["z"] - k * 0.35
+            py = rock["y"] + k * 0.08
+            tx, ty = world_to_screen(px, pz)
+            ty -= py * 14.0
+            tdraw.ellipse((tx - 6, ty - 6, tx + 6, ty + 6),
+                          fill=(*EMBER, max(0, 90 - k * 10)))
+        image.alpha_composite(trail.filter(ImageFilter.GaussianBlur(5)))
+
+    image.alpha_composite(glow.filter(ImageFilter.GaussianBlur(7)))
+    draw = ImageDraw.Draw(image)
+
+    # Markers
+    draw.ellipse((c0[0] - 7, c0[1] - 7, c0[0] + 7, c0[1] + 7),
+                 outline=(255, 180, 120, 255), width=2)
+    draw.ellipse((c0[0] - 2, c0[1] - 2, c0[0] + 2, c0[1] + 2), fill=(*EMBER, 255))
+    draw.text((c0[0] - 20, c0[1] + 12), "CASTER", font=FONT_TINY, fill=(180, 110, 70))
+    ic = world_to_screen(frame["impact_pos"][0], frame["impact_pos"][1])
+    draw.ellipse((ic[0] - 9, ic[1] - 9, ic[0] + 9, ic[1] + 9), outline=(255, 160, 90, 200), width=1)
+    draw.text((ic[0] - 18, ic[1] + 13), "IMPACT", font=FONT_TINY, fill=(180, 110, 70))
+
+    bar_y = PLOT_Y + PLOT_H - 62
+    bx0, bx1 = PLOT_X + 40, PLOT_X + PLOT_W - 40
+    draw.line((bx0, bar_y, bx1, bar_y), fill=(90, 50, 30, 255), width=2)
+    for edge, tag in ((travel_end, "I"), (fade_start, "F")):
+        tx = bx0 + (bx1 - bx0) * edge / total
+        draw.line((tx, bar_y - 5, tx, bar_y + 5), fill=(220, 130, 70, 255), width=1)
+        draw.text((tx - 3, bar_y - 19), tag, font=FONT_TINY, fill=(160, 100, 60))
+    knob = bx0 + (bx1 - bx0) * t / total
+    draw.ellipse((knob - 5, bar_y - 5, knob + 5, bar_y + 5),
+                 fill=(*EMBER, 255), outline=(*HOT_CINDER, 255), width=1)
+
+    nchunks = len(frame.get("chunks", []))
+    nfiss = len(frame.get("fissures", []))
+    ltext = f"PHASE {phase.upper()}  —  FRONT {frame['front']:04.1f} / {dump['length']:04.1f} M"
+    draw.rounded_rectangle((PLOT_X + 22, PLOT_Y + PLOT_H - 43, PLOT_X + 22 + 330, PLOT_Y + PLOT_H - 16),
+                           radius=12, fill=(40, 16, 8, 220), outline=(140, 70, 35, 200))
+    draw.text((PLOT_X + 38, PLOT_Y + PLOT_H - 37), ltext, font=FONT_TINY, fill=(255, 190, 130))
+    rtext = f"CHUNKS {nchunks:02d}  FISSURES {nfiss:02d}  LIGHT {frame['light']['intensity']:04.1f}"
+    rw = draw.textlength(rtext, font=FONT_TINY)
+    draw.rounded_rectangle((PLOT_X + PLOT_W - rw - 38, PLOT_Y + PLOT_H - 43, PLOT_X + PLOT_W - 22, PLOT_Y + PLOT_H - 16),
+                           radius=12, fill=(40, 16, 8, 220), outline=(140, 70, 35, 200))
+    draw.text((PLOT_X + PLOT_W - rw - 30, PLOT_Y + PLOT_H - 37), rtext, font=FONT_TINY, fill=(200, 140, 90))
+
+    draw.text((1018, 625), f"{t:04.1f} / {total:04.1f} SEC", font=FONT_META_BOLD, fill=(220, 140, 80))
+    return image.convert("RGB")
+
+
+def encode_cinder_mp4(frames, dump, bounds, output: Path) -> None:
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        raise RuntimeError("ffmpeg is required")
+    command = [
+        ffmpeg, "-loglevel", "error", "-y",
+        "-f", "rawvideo", "-vcodec", "rawvideo", "-pix_fmt", "rgb24",
+        "-s", f"{WIDTH}x{HEIGHT}", "-r", str(FPS), "-i", "-",
+        "-an", "-c:v", "libx264", "-preset", "medium", "-crf", "25",
+        "-profile:v", "high", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+        str(output),
+    ]
+    with subprocess.Popen(command, stdin=subprocess.PIPE) as process:
+        assert process.stdin is not None
+        for i, frame in enumerate(frames):
+            if i % FPS == 0:
+                print(f"cinder_fall: frame {i:03d}/{len(frames)}")
+            pixels = np.asarray(cinder_frame(frame, dump, bounds), dtype=np.uint8)
+            process.stdin.write(pixels.tobytes())
+        process.stdin.close()
+        if process.wait() != 0:
+            raise RuntimeError("ffmpeg failed while encoding cinder_fall.mp4")
+    print(f"{output}: {output.stat().st_size:,} bytes")
+
+
+def render_cinder(output: Path, dump_path: Path, regen: bool) -> None:
+    dump = load_cinder_dump(dump_path, regen)
+    if dump_path.resolve() != (output / dump_path.name).resolve():
+        shutil.copy(dump_path, output / dump_path.name)
+    frames = dump["frames"]
+    assert len(frames) >= 40, "dump must cover the full lifecycle"
+    assert any(f["phase"] == "Impact" for f in frames), "dump must reach Impact"
+    assert any(f["phase"] == "Fade" for f in frames), "dump must reach Fade"
+    assert frames[-1]["phase"] == "Done", "dump must run to Done"
+    bounds = phase_boundaries(frames)
+    print(f"cinder dump: {len(frames)} frames, "
+          f"total {dump['total_duration']:.2f}s "
+          f"(travel→{bounds[0]:.2f}s, fade→{bounds[1]:.2f}s)")
+    mp4 = output / "cinder_fall.mp4"
+    encode_cinder_mp4(frames, dump, bounds, mp4)
+    encode_gif(mp4, output / "cinder_fall.gif")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--ability", choices=("frost", "storm", "all"), default="storm",
-                        help="which cinematic card to render (default: storm)")
+    parser.add_argument("--ability", choices=("frost", "storm", "cinder", "all"), default="cinder",
+                        help="which cinematic card to render (default: cinder)")
     parser.add_argument("--output", type=Path, default=HERE)
     parser.add_argument("--dump", type=Path, default=None,
                         help="override dump path (defaults per ability)")
@@ -657,14 +927,17 @@ def main() -> None:
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
 
-    abilities = ["frost", "storm"] if args.ability == "all" else [args.ability]
+    abilities = ["frost", "storm", "cinder"] if args.ability == "all" else [args.ability]
     for ability in abilities:
         if ability == "frost":
             dump = args.dump or (HERE / "frost_lance_frames.json")
             render_frost(args.output, dump, args.regen)
-        else:
+        elif ability == "storm":
             dump = args.dump or (HERE / "storm_lance_frames.json")
             render_storm(args.output, dump, args.regen)
+        else:
+            dump = args.dump or (HERE / "cinder_fall_frames.json")
+            render_cinder(args.output, dump, args.regen)
 
 
 if __name__ == "__main__":

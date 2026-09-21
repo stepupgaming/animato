@@ -2,3 +2,5 @@
 `frost_lance.gif` — 640px embeddable preview of the same clip for issue #1.
 `storm_lance.mp4` — Cinematic 1280×720 card demo: Storm Lance (E) bolt from aim lock, strike front racing down the 12 m line, filament bundle cracking behind it with restrike, impact hold + electric flash, then cubic blow-out. Every polyline is sampled from the real `animato-fx-elemental` Rust pipeline via `storm_lance_frames.json`.
 `storm_lance.gif` — 640px embeddable preview of the Storm Lance clip for issue #1 / PR #2.
+`cinder_fall.mp4` — Cinematic 1280×720 card demo: Cinder Fall (R) arced meteor from aim lock, ballistic lob down the 12 m line with charge heat, impact detonation with molten fissures racing outward + debris spray, then crater fade. Every transform is sampled from the real `animato-fx-elemental` Rust pipeline via `cinder_fall_frames.json`.
+`cinder_fall.gif` — 640px embeddable preview of the Cinder Fall clip for issue #1 / PR #2.
