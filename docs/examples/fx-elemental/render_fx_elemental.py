@@ -2,12 +2,12 @@
 """Render cinematic 1280x720 Elemental Lab product-demo clips.
 
 Every transform comes from the REAL Rust pipeline dumps
-(``dump_frost_lance`` / ``dump_storm_lance`` / ``dump_cinder_fall`` / ``dump_nova_beam``).
+(``dump_frost_lance`` / ``dump_storm_lance`` / ``dump_cinder_fall`` / ``dump_nova_beam`` / ``dump_voltaic_snare``).
 This script only handles presentation — dark glassy card UI, ice/cyan,
-storm/blue, cinder/ember or nova/cyan-gold palette, ffmpeg H.264 + GIF for issue embeds.
+storm/blue, cinder/ember, nova/cyan-gold or voltaic/violet palette, ffmpeg H.264 + GIF for issue embeds.
 
 Usage:
-    python3 render_fx_elemental.py [--ability frost|storm|cinder|nova|all] [--output DIR] [--regen]
+    python3 render_fx_elemental.py [--ability frost|storm|cinder|nova|snare|all] [--output DIR] [--regen]
 """
 
 from __future__ import annotations
@@ -1213,9 +1213,255 @@ def render_nova(output: Path, dump_path: Path, regen: bool) -> None:
 
 
 
+
+# ── Voltaic Snare (V) — top-down cage card ───────────────────────────────────
+
+SNARE_SUBTITLES = {
+    "Travel": "leash whipping across the floor — planting the trap",
+    "Impact": "cage slam — column, tendrils and rim arcs holding the disc",
+    "Fade": "collapse — pillar thinning to a thread",
+    "Done": "pipeline complete — ready for the next cast",
+    "Idle": "zone aim locked — cast armed",
+}
+
+SNARE_CHIPS = {
+    "Travel": "TRAVEL — LEASH FLIGHT",
+    "Impact": "IMPACT — CAGE HOLD",
+    "Fade": "FADE — COLLAPSE",
+    "Done": "DONE",
+    "Idle": "ZONE — CAST ARMED",
+}
+
+VIOLET = (169, 139, 255)
+VIOLET_HOT = (220, 208, 255)
+VIOLET_CORE = (255, 255, 255)
+
+
+def load_snare_dump(dump_path: Path, regen: bool) -> dict:
+    if regen or not dump_path.exists() or dump_path.stat().st_size == 0:
+        cargo = shutil.which("cargo")
+        if cargo is None:
+            raise RuntimeError("cargo is required to regenerate the frame dump")
+        print(f"regenerating {dump_path} via dump_voltaic_snare example…")
+        subprocess.run(
+            [cargo, "run", "-q", "-p", "animato-fx-elemental",
+             "--example", "dump_voltaic_snare", "--", str(dump_path)],
+            cwd=REPO_ROOT,
+            check=True,
+        )
+    with open(dump_path) as f:
+        return json.load(f)
+
+
+def snare_phase_boundaries(frames: list[dict]) -> tuple[float, float, float]:
+    travel_end = fade_start = frames[-1]["t"]
+    for fr in frames:
+        if fr["phase"] == "Impact":
+            travel_end = fr["t"]
+            break
+    for fr in frames:
+        if fr["phase"] == "Fade":
+            fade_start = fr["t"]
+            break
+    return travel_end, fade_start, frames[-1]["t"]
+
+
+def snare_world_to_screen(x: float, z: float, cx: float, cz: float) -> tuple[float, float]:
+    """Top-down: world XZ → plot, centred on the planted cage."""
+    half = 8.5
+    px = PLOT_X + PLOT_W * 0.5 + (x - cx) * (PLOT_W * 0.5 / half)
+    py = PLOT_Y + PLOT_H * 0.5 - (z - cz) * (PLOT_H * 0.5 / half)
+    return (px, py)
+
+
+def snare_base_scene(kicker, title, subtitle, chip, right_meta):
+    image = BACKGROUND.copy()
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((68, 48, 1212, 672), radius=22, fill=CARD, outline=(60, 40, 100, 230), width=2)
+    draw.line((96, 166, 1184, 166), fill=(60, 40, 100, 190), width=1)
+    draw.text((120, 78), kicker, font=FONT_KICKER, fill=(180, 150, 255))
+    draw.text((120, 101), title, font=FONT_TITLE, fill=(231, 244, 255))
+    draw.text((120, 140), subtitle, font=FONT_SUBTITLE, fill=MUTED)
+    chip_w = max(130, int(draw.textlength(chip, font=FONT_CHIP) + 48))
+    chip_x = 1160 - chip_w
+    draw.rounded_rectangle((chip_x, 91, 1160, 125), radius=17, fill=(30, 14, 60, 245), outline=(140, 100, 220, 220), width=1)
+    draw.ellipse((chip_x + 14, 103, chip_x + 21, 110), fill=VIOLET)
+    draw.text((chip_x + 31, 99), chip, font=FONT_CHIP, fill=(210, 190, 255))
+    draw.rounded_rectangle(
+        (PLOT_X - 1, PLOT_Y - 1, PLOT_X + PLOT_W + 1, PLOT_Y + PLOT_H + 1),
+        radius=12, fill=PLOT_BG, outline=(70, 40, 120, 255), width=2,
+    )
+    for x in range(PLOT_X + 40, PLOT_X + PLOT_W, 80):
+        draw.line((x, PLOT_Y + 2, x, PLOT_Y + PLOT_H - 2), fill=GRID, width=1)
+    for y in range(PLOT_Y + 40, PLOT_Y + PLOT_H, 56):
+        draw.line((PLOT_X + 2, y, PLOT_X + PLOT_W - 2, y), fill=GRID, width=1)
+    draw.text((PLOT_X + 22, PLOT_Y + 16), "LIVE PREVIEW  —  FROM RUST DUMP  —  TOP-DOWN", font=FONT_PLOT, fill=(140, 110, 200))
+    draw.text((PLOT_X + PLOT_W - 150, PLOT_Y + 16), right_meta, font=FONT_TINY, fill=(110, 90, 160))
+    draw.text((120, 625), "ANIMATO  /  ELEMENTAL LAB", font=FONT_META_BOLD, fill=(110, 90, 160))
+    draw.text((370, 625), "VOLTAIC SNARE (V)  —  SEEDED, SEEKABLE ZONE CAST", font=FONT_META, fill=(90, 70, 140))
+    return image
+
+
+def snare_frame(frame: dict, dump: dict, bounds: tuple) -> Image.Image:
+    travel_end, fade_start, total = bounds
+    phase = frame["phase"]
+    t = frame["t"]
+    image = snare_base_scene(
+        "ELEMENTAL SANDBOX  /  VOLTAIC SNARE (V)",
+        "VOLTAIC SNARE",
+        SNARE_SUBTITLES.get(phase, ""),
+        SNARE_CHIPS.get(phase, phase.upper()),
+        "SEED 7  /  SEEKABLE",
+    )
+    cx, cz = frame["center"]
+    zone_r = float(dump["zone_radius"])
+    fade = max(0.0, min(1.0, float(frame.get("fade", 1.0))))
+    open_amt = max(0.0, float(frame.get("open", 0.0)))
+    origin = dump.get("origin", [0.0, 0.0])
+
+    # Soft violet wash over the disc once the cage is open.
+    if open_amt > 0.02:
+        wash, wdraw = alpha_layer()
+        r_px = zone_r * min(1.0, open_amt) * (PLOT_W * 0.5 / 8.5)
+        c = snare_world_to_screen(cx, cz, cx, cz)
+        alpha = int(40 * fade * min(1.0, open_amt))
+        wdraw.ellipse(
+            (c[0] - r_px, c[1] - r_px, c[0] + r_px, c[1] + r_px),
+            fill=(90, 50, 180, alpha),
+        )
+        wdraw.ellipse(
+            (c[0] - r_px, c[1] - r_px, c[0] + r_px, c[1] + r_px),
+            outline=(200, 180, 255, int(180 * fade * min(1.0, open_amt))),
+            width=3,
+        )
+        image.alpha_composite(wash.filter(ImageFilter.GaussianBlur(6)))
+
+    # Aim cue early in travel.
+    if t < 0.35 and phase in ("Travel", "Idle"):
+        overlay, odraw = alpha_layer()
+        o = snare_world_to_screen(origin[0], origin[1], cx, cz)
+        c = snare_world_to_screen(cx, cz, cx, cz)
+        steps = 20
+        for i in range(steps):
+            if i % 2 == 0:
+                s0 = i / steps
+                s1 = min(1.0, (i + 0.55) / steps)
+                p0 = (o[0] + (c[0] - o[0]) * s0, o[1] + (c[1] - o[1]) * s0)
+                p1 = (o[0] + (c[0] - o[0]) * s1, o[1] + (c[1] - o[1]) * s1)
+                odraw.line((p0, p1), fill=(180, 160, 255, 200), width=2)
+        r_px = zone_r * (PLOT_W * 0.5 / 8.5)
+        odraw.ellipse(
+            (c[0] - r_px, c[1] - r_px, c[0] + r_px, c[1] + r_px),
+            outline=(180, 160, 255, 160),
+            width=2,
+        )
+        image.alpha_composite(overlay)
+
+    # Filament polylines.
+    glow, gdraw = alpha_layer()
+    core, cdraw = alpha_layer()
+    role_alpha = {"Leash": 220, "Column": 255, "Tendril": 200, "Rim": 230}
+    for fil in frame.get("filaments", []):
+        nodes = fil.get("nodes") or []
+        if len(nodes) < 2:
+            continue
+        flash = max(0.15, min(1.0, float(fil.get("flash", 1.0))))
+        dim = max(0.2, min(1.0, float(fil.get("dim", 1.0))))
+        a = int(role_alpha.get(fil.get("role", "Column"), 200) * fade * flash * dim)
+        pts = [snare_world_to_screen(n["x"], n["z"], cx, cz) for n in nodes]
+        w_hint = max((float(n.get("w", 0.03)) for n in nodes), default=0.03)
+        width = max(1, min(5, int(w_hint * 80)))
+        gdraw.line(pts, fill=(120, 70, 220, max(30, a // 2)), width=width + 3)
+        color = VIOLET_CORE if fil.get("role") in ("Column", "Leash") else VIOLET_HOT
+        cdraw.line(pts, fill=(*color, a), width=max(1, width))
+
+    image.alpha_composite(glow.filter(ImageFilter.GaussianBlur(2)))
+    image.alpha_composite(core)
+
+    draw = ImageDraw.Draw(image)
+    o = snare_world_to_screen(origin[0], origin[1], cx, cz)
+    c = snare_world_to_screen(cx, cz, cx, cz)
+    draw.ellipse((o[0] - 5, o[1] - 5, o[0] + 5, o[1] + 5), fill=(180, 160, 255, 220))
+    if open_amt > 0.05:
+        draw.ellipse((c[0] - 4, c[1] - 4, c[0] + 4, c[1] + 4), fill=(255, 255, 255, int(200 * fade)))
+
+    if phase == "Impact":
+        age_i = t - travel_end
+        flash = max(0.0, 0.45 - age_i * 1.5)
+        if flash > 0.0:
+            veil, _ = alpha_layer()
+            ImageDraw.Draw(veil).rectangle(
+                (PLOT_X, PLOT_Y, PLOT_X + PLOT_W, PLOT_Y + PLOT_H),
+                fill=(200, 180, 255, int(flash * 200)),
+            )
+            image.alpha_composite(veil)
+
+    progress = 0.0 if total <= 0 else clamp(t / total, 0.0, 1.0)
+    bar_x0, bar_y0, bar_x1 = 120, 600, 1160
+    draw.rounded_rectangle((bar_x0, bar_y0, bar_x1, bar_y0 + 8), radius=4, fill=(30, 20, 50, 220))
+    fill_x = bar_x0 + (bar_x1 - bar_x0) * progress
+    draw.rounded_rectangle((bar_x0, bar_y0, fill_x, bar_y0 + 8), radius=4, fill=(*VIOLET, 230))
+    for boundary, _tag in ((travel_end, "SNAP"), (fade_start, "FADE")):
+        if total > 0:
+            bx = bar_x0 + (bar_x1 - bar_x0) * (boundary / total)
+            draw.line((bx, bar_y0 - 2, bx, bar_y0 + 10), fill=(160, 140, 220, 200), width=1)
+
+    meta = (
+        f"t={t:5.2f}s   open={open_amt:4.2f}   "
+        f"climb={float(frame.get('climb', 0)):4.2f}   "
+        f"filaments={len(frame.get('filaments', []))}"
+    )
+    draw.text((120, 575), meta, font=FONT_TINY, fill=(140, 120, 190))
+    return image.convert("RGB")
+
+
+def encode_snare_mp4(frames, dump, bounds, output: Path) -> None:
+    command = [
+        "ffmpeg", "-y", "-f", "rawvideo", "-vcodec", "rawvideo",
+        "-pix_fmt", "rgb24", "-s", f"{WIDTH}x{HEIGHT}", "-r", str(FPS),
+        "-i", "-", "-an", "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+        "-profile:v", "high", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+        str(output),
+    ]
+    with subprocess.Popen(command, stdin=subprocess.PIPE) as process:
+        assert process.stdin is not None
+        for i, frame in enumerate(frames):
+            if i % FPS == 0:
+                print(f"voltaic_snare: frame {i:03d}/{len(frames)}")
+            pixels = np.asarray(snare_frame(frame, dump, bounds), dtype=np.uint8)
+            process.stdin.write(pixels.tobytes())
+        process.stdin.close()
+        if process.wait() != 0:
+            raise RuntimeError("ffmpeg failed while encoding voltaic_snare.mp4")
+    print(f"{output}: {output.stat().st_size:,} bytes")
+
+
+def render_snare(output: Path, dump_path: Path, regen: bool) -> None:
+    dump = load_snare_dump(dump_path, regen)
+    dest = output / dump_path.name
+    if dump_path.resolve() != dest.resolve():
+        shutil.copy(dump_path, dest)
+    frames = dump["frames"]
+    assert len(frames) >= 40, "dump must cover the full lifecycle"
+    assert any(f["phase"] == "Travel" for f in frames), "dump must include Travel"
+    assert any(f["phase"] == "Impact" for f in frames), "dump must reach Impact"
+    assert any(f["phase"] == "Fade" for f in frames), "dump must reach Fade"
+    assert frames[-1]["phase"] == "Done", "dump must run to Done"
+    bounds = snare_phase_boundaries(frames)
+    print(
+        f"snare dump: {len(frames)} frames, "
+        f"total {dump['total_duration']:.2f}s "
+        f"(travel→{bounds[0]:.2f}s, fade→{bounds[1]:.2f}s)"
+    )
+    mp4 = output / "voltaic_snare.mp4"
+    encode_snare_mp4(frames, dump, bounds, mp4)
+    encode_gif(mp4, output / "voltaic_snare.gif")
+
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--ability", choices=("frost", "storm", "cinder", "nova", "all"), default="nova",
+    parser.add_argument("--ability", choices=("frost", "storm", "cinder", "nova", "snare", "all"), default="snare",
                         help="which cinematic card to render (default: nova)")
     parser.add_argument("--output", type=Path, default=HERE)
     parser.add_argument("--dump", type=Path, default=None,
@@ -1225,7 +1471,7 @@ def main() -> None:
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
 
-    abilities = ["frost", "storm", "cinder", "nova"] if args.ability == "all" else [args.ability]
+    abilities = ["frost", "storm", "cinder", "nova", "snare"] if args.ability == "all" else [args.ability]
     for ability in abilities:
         if ability == "frost":
             dump = args.dump or (HERE / "frost_lance_frames.json")
@@ -1236,9 +1482,12 @@ def main() -> None:
         elif ability == "cinder":
             dump = args.dump or (HERE / "cinder_fall_frames.json")
             render_cinder(args.output, dump, args.regen)
-        else:
+        elif ability == "nova":
             dump = args.dump or (HERE / "nova_beam_frames.json")
             render_nova(args.output, dump, args.regen)
+        else:
+            dump = args.dump or (HERE / "voltaic_snare_frames.json")
+            render_snare(args.output, dump, args.regen)
 
 
 if __name__ == "__main__":

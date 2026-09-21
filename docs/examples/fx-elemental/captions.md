@@ -6,3 +6,5 @@
 `cinder_fall.gif` — 640px embeddable preview of the Cinder Fall clip for issue #1 / PR #2.
 `nova_beam.mp4` — Cinematic 1280×720 card demo: Nova Beam (F) from aim lock, charge orb winding up in the hands, leading edge racing the 12 m line as a parametric tube with shock discs, sustain burn at impact, then width-collapse fade. Every transform is sampled from the real `animato-fx-elemental` Rust pipeline via `nova_beam_frames.json`.
 `nova_beam.gif` — 640px embeddable preview of the Nova Beam clip for issue #1 / PR #2.
+`voltaic_snare.mp4` — Cinematic 1280×720 top-down card demo: Voltaic Snare (V) zone cast from aim lock, leash whipping out to the planted circle, cage slam with column / tendrils / rim arcs holding the disc under `zone_radius`, then collapse. Every polyline is sampled from the real `animato-fx-elemental` Rust pipeline via `voltaic_snare_frames.json`.
+`voltaic_snare.gif` — 640px embeddable preview of the Voltaic Snare clip for issue #1 / PR #2.
