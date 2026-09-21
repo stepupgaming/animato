@@ -444,6 +444,21 @@ impl FrostLance {
     /// shared [`FrostLance::step`] body re-simulates at [`SEEK_STEP`], so the
     /// same time always yields the same state, and param edits apply at
     /// sample time (edit-while-paused).
+    ///
+    /// ```rust
+    /// use animato_fx_elemental::FrostLance;
+    ///
+    /// let mut a = FrostLance::new();
+    /// a.cast([0.0, 0.0], [0.0, 1.0], 12.0, 7).unwrap();
+    /// let mut b = FrostLance::new();
+    /// b.cast([0.0, 0.0], [0.0, 1.0], 12.0, 7).unwrap();
+    ///
+    /// a.seek_abs(1.25);
+    /// b.seek_abs(1.25);
+    /// assert_eq!(a.front(), b.front());
+    /// assert_eq!(a.erupted_count(), b.erupted_count());
+    /// assert_eq!(a.samples(), b.samples());
+    /// ```
     pub fn seek_abs(&mut self, time: f32) {
         if self.phase == Phase::Idle {
             return;

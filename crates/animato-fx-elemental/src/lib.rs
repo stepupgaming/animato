@@ -48,6 +48,10 @@
 //! Phase 2 covers **one** line-cast ability (Frost Lance). Storm Lance,
 //! Cinder Fall, Nova Beam and Voltaic Snare — plus any Ext/Extended sandboxes
 //! — are follow-ups (see README).
+//!
+//! The optional `wgpu` feature (`gpu.rs`) is an instance-layout stub only,
+//! not a renderer: the default build stays GPU-free. See the crate README
+//! ("GPU / `wgpu` scope") and `docs/adr/0003-optional-fx-elemental-crate.md`.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(missing_docs)]

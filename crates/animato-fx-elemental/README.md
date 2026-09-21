@@ -60,6 +60,23 @@ The original's edit-while-paused rule is preserved: records store dice only,
 so mutating `FrostLance::params_mut()` re-shapes a standing field with the
 clock stopped.
 
+## GPU / `wgpu` scope (stub, not a renderer)
+
+`src/gpu.rs` (feature `wgpu`, off by default) is an **instance-layout stub
+only, not a renderer**: it exposes the instance-buffer layout (`64-byte
+stride`, shader locations 4–7, one instanced draw per crystal variant) that a
+downstream renderer uses to upload resolved `SpikeSample` data. It draws
+nothing, owns no device/swapchain/shaders, and the default build stays
+GPU-free so `cargo test` needs no GPU. A full `wgpu` renderer backend
+(particles, decals, ice shading) is follow-up work (see below).
+
+## Design record
+
+See [ADR 0003](../../docs/adr/0003-optional-fx-elemental-crate.md) (extends
+ADR 0001 / 0002): why Frost Lance (Q) is the first and only ability in this
+phase, the seekable/`Playable` contract, the renderer-owned split, and why
+the thin `wgpu` instance-layout stub is intentional.
+
 ## Attribution / license
 
 Derived from [LinearAbiltyCastingThreeJS](https://github.com/achrefelouafi/LinearAbiltyCastingThreeJS)

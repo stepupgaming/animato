@@ -30,6 +30,19 @@ pub struct AimSolution {
 /// valid    = raw >= min_range
 /// distance = clamp(raw, max(0.2, min_range), max(0.4, range))
 /// ```
+///
+/// ```rust
+/// use animato_fx_elemental::{FrostLanceParams, solve_aim};
+///
+/// let params = FrostLanceParams::default();
+/// let near = solve_aim(&params, [0.0, 0.0], [0.0, 1.0], 1.0);
+/// assert!(!near.valid); // nearer than `min_range`: the red-arrow state
+/// assert_eq!(near.distance, params.min_range);
+///
+/// let far = solve_aim(&params, [0.0, 0.0], [1.0, 0.0], 99.0);
+/// assert!(far.valid);
+/// assert_eq!(far.distance, params.range);
+/// ```
 pub fn solve_aim(
     params: &FrostLanceParams,
     origin: [f32; 2],
