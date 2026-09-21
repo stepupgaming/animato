@@ -8,3 +8,6 @@
 `nova_beam.gif` — 640px embeddable preview of the Nova Beam clip for issue #1 / PR #2.
 `voltaic_snare.mp4` — Cinematic 1280×720 top-down card demo: Voltaic Snare (V) zone cast from aim lock, leash whipping out to the planted circle, cage slam with column / tendrils / rim arcs holding the disc under `zone_radius`, then collapse. Every polyline is sampled from the real `animato-fx-elemental` Rust pipeline via `voltaic_snare_frames.json`.
 `voltaic_snare.gif` — 640px embeddable preview of the Voltaic Snare clip for issue #1 / PR #2.
+`glacial_crown.mp4` — Cinematic 1280×720 top-down card demo: Glacial Crown (X) zone cast from aim lock, freeze front racing to the planted circle, ring-of-blades bloom with skirt banking under `zone_radius`, then shatter/thaw. Every shard transform is sampled from the real `animato-fx-elemental` Rust pipeline via `glacial_crown_frames.json`.
+`glacial_crown.gif` — 640px embeddable preview of the Glacial Crown clip for issue #1 / PR #2.
+
