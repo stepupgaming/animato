@@ -1,0 +1,21 @@
+[package]
+name        = "animato-composition"
+description = "Seekable track/clip composition over the Animato timeline."
+readme.workspace  = true
+version.workspace     = true
+edition.workspace     = true
+license.workspace     = true
+repository.workspace  = true
+authors.workspace     = true
+rust-version.workspace = true
+keywords    = ["animation", "timeline", "composition", "video", "seek"]
+categories  = ["game-development", "graphics"]
+
+[features]
+default = ["std"]
+std     = ["animato-core/std", "animato-tween/std", "animato-timeline/std"]
+
+[dependencies]
+animato-core     = { workspace = true }
+animato-tween    = { workspace = true }
+animato-timeline = { workspace = true }

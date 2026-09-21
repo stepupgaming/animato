@@ -62,6 +62,7 @@ version = "1.7.2"
 dependencies = [
  "animato-bevy",
  "animato-color",
+ "animato-composition",
  "animato-core",
  "animato-devtools",
  "animato-dioxus",
@@ -110,6 +111,15 @@ dependencies = [
  "animato-core",
  "palette",
  "serde",
+]
+
+[[package]]
+name = "animato-composition"
+version = "1.7.2"
+dependencies = [
+ "animato-core",
+ "animato-timeline",
+ "animato-tween",
 ]
 
 [[package]]

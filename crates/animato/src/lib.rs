@@ -95,6 +95,7 @@
 //! | `js` | WASM-to-NPM JavaScript bindings |
 //! | `devtools` | Timeline inspector, easing editor, spring visualizer, recorder controls, perf monitor |
 //! | `macro` | Declarative `animato!{}` Motion Macro DSL |
+//! | `composition` | [`Composition`], [`Track`], [`Clip`] seekable track/clip composition |
 //! | `tokio` | [`Timeline::wait()`] async completion waiting |
 //! | `serde` | `Serialize`/`Deserialize` on all public types |
 
@@ -248,6 +249,10 @@ pub use animato_devtools::DevToolsTuiPanel;
 #[cfg(feature = "macro")]
 pub use animato_macro::{animato, keyframes, motion, preset, spring, timeline, tween};
 
+// ── Composition (optional edge crate; defaults unchanged) ────────────────────
+#[cfg(feature = "composition")]
+pub use animato_composition::{Clip, Composition, Track};
+
 /// Prelude module with macro-friendly re-exports.
 ///
 /// Import everything for ergonomic macro usage:
@@ -304,4 +309,7 @@ pub mod prelude {
 
     #[cfg(feature = "macro")]
     pub use crate::{animato, keyframes, motion, preset, spring, timeline, tween};
+
+    #[cfg(feature = "composition")]
+    pub use crate::{Clip, Composition, Track};
 }
