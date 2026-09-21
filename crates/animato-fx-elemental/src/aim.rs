@@ -6,7 +6,15 @@
 //! cast invalid (the red arrow) and refuses it. No DOM, no Three.js.
 
 use crate::math::clamp;
-use crate::params::FrostLanceParams;
+
+/// Reach envelope shared by every line-cast ability (`FrostLanceParams`,
+/// [`StormLanceParams`](crate::params::StormLanceParams), …).
+pub trait AimReach {
+    /// Maximum cast distance, metres.
+    fn cast_range(&self) -> f32;
+    /// Casts nearer than this are refused.
+    fn cast_min_range(&self) -> f32;
+}
 
 /// Solved line-cast target: origin on the floor, unit heading, distance.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -44,7 +52,7 @@ pub struct AimSolution {
 /// assert_eq!(far.distance, params.range);
 /// ```
 pub fn solve_aim(
-    params: &FrostLanceParams,
+    params: &impl AimReach,
     origin: [f32; 2],
     direction: [f32; 2],
     raw_distance: f32,
@@ -55,11 +63,13 @@ pub fn solve_aim(
     } else {
         [0.0, 1.0]
     };
-    let valid = raw_distance >= params.min_range;
+    let min_range = params.cast_min_range();
+    let range = params.cast_range();
+    let valid = raw_distance >= min_range;
     let distance = clamp(
         raw_distance,
-        0.2f32.max(params.min_range),
-        0.4f32.max(params.range),
+        0.2f32.max(min_range),
+        0.4f32.max(range),
     );
     AimSolution {
         origin: [origin[0], origin[1]],
@@ -73,6 +83,7 @@ pub fn solve_aim(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::params::FrostLanceParams;
 
     #[test]
     fn clamps_into_reach_and_flags_min_range() {

@@ -65,10 +65,11 @@ traits: it must land as an optional edge crate with unchanged defaults.
    crate README. No binary assets (FBX, PNG, HDR) were taken — only pipeline
    structure, timing curves and parameter defaults, re-expressed in
    renderer-agnostic Rust.
-4. **Follow-ups are out of scope.** Remaining sandbox abilities (Storm Lance,
-   Cinder Fall, Nova Beam, Voltaic Snare), Ext / Extended sandboxes, and a
-   full `wgpu` renderer backend (particles, decals, ice shading) are not
-   started here.
+4. **Follow-ups.** **Storm Lance (E)** is now in-crate (`StormLance` /
+   `StormLanceParams` / `filament.rs` — ThunderAbility port with restrike
+   polylines). Remaining sandbox abilities (Cinder Fall, Nova Beam, Voltaic
+   Snare), Ext / Extended sandboxes, and a full `wgpu` renderer backend
+   (particles, decals, ice/lightning shading) are not started here.
 
 ## Consequences
 

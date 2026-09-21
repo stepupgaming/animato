@@ -195,6 +195,216 @@ impl FrostLanceParams {
     }
 }
 
+impl crate::aim::AimReach for FrostLanceParams {
+    fn cast_range(&self) -> f32 {
+        self.range
+    }
+
+    fn cast_min_range(&self) -> f32 {
+        self.min_range
+    }
+}
+
+
+/// Hard ceiling on filaments per bolt (matches `MAX_STRANDS` in `ThunderAbility.js`).
+pub const MAX_STRANDS: usize = 24;
+
+/// Samples along one filament polyline when resolving CPU-side strand samples.
+///
+/// Matches the ribbon tessellation ceiling in `ThunderAbility.js` (`NODES = 72`):
+/// higher-frequency kinks than one per two nodes just alias.
+pub const STRAND_NODES: usize = 72;
+
+/// Procedural parameters for one Storm Lance cast.
+///
+/// Field defaults reproduce the shipped `settings.thunder` look. Only
+/// CPU-resolved dimensions are carried — shader-only colour / particle /
+/// decal tuning stays in GLSL and is documented in the crate README mapping.
+#[derive(Clone, Debug, PartialEq)]
+pub struct StormLanceParams {
+    // ── the cast itself ──
+    /// Maximum cast distance, metres.
+    pub range: f32,
+    /// Casts nearer than this are refused (mirrors the red arrow state).
+    pub min_range: f32,
+    /// Strike-front speed, metres/second.
+    pub speed: f32,
+    /// Seconds the bolt holds after it lands.
+    pub lifetime: f32,
+    /// Seconds it takes to blow out.
+    pub fade_time: f32,
+    /// Seconds before the ability can be armed again.
+    pub cooldown: f32,
+    /// Global speed multiplier (mirrors `settings.global.speed`; `1.0` = off).
+    pub speed_scale: f32,
+    /// Global randomness multiplier (mirrors `settings.global.randomness`).
+    pub randomness: f32,
+
+    // ── where the bolt leaves the caster ──
+    /// Metres above the floor at the hand.
+    pub hand_height: f32,
+    /// Metres in front of the caster.
+    pub hand_forward: f32,
+    /// Metres to the side (+ follows the cast `side`).
+    pub hand_side: f32,
+    /// Height of the bolt where it lands, metres.
+    pub end_height: f32,
+    /// Metres the mid-span bows upward (negative droops).
+    pub sag: f32,
+
+    // ── the bundle of filaments ──
+    /// Separate filaments (capped at [`MAX_STRANDS`]).
+    pub strands: f32,
+    /// Metres the bundle fans out at the far end.
+    pub spread: f32,
+    /// Metres the bundle fans out at the hand.
+    pub spread_near: f32,
+    /// `>1` keeps the bundle tight then opens it late.
+    pub spread_curve: f32,
+    /// Turns the bundle makes around the axis over its length.
+    pub twist: f32,
+    /// Turns/second it rolls on top of that.
+    pub twist_speed: f32,
+    /// How much dimmer an outer filament is than the spine, `0..1`.
+    pub branch_dim: f32,
+
+    // ── the shape of one filament ──
+    /// Metres of kink at the coarsest octave.
+    pub jitter: f32,
+    /// Kinks per metre.
+    pub jitter_scale: f32,
+    /// Octave count, `1..5`.
+    pub octaves: f32,
+    /// Amplitude kept per octave.
+    pub jitter_falloff: f32,
+    /// How fast the kinks slide along the bolt.
+    pub crawl: f32,
+    /// Fraction of the span the ends are pulled straight over.
+    pub pinch: f32,
+    /// How hard the far end is pulled onto the target, `0..1`.
+    pub converge: f32,
+
+    // ── the ribbon (width hints for CPU samples / renderers) ──
+    /// Half-width of a filament at the hand, metres.
+    pub width: f32,
+    /// That width at the impact point, as a fraction.
+    pub width_tip: f32,
+    /// How early the taper happens.
+    pub width_curve: f32,
+    /// Multiplier on the central spine.
+    pub core_width: f32,
+
+    // ── flicker & restrike ──
+    /// Times/second the filaments re-roll their shape.
+    pub restrike: f32,
+    /// Depth of the whole-bolt brightness stutter.
+    pub flicker: f32,
+    /// Stutters/second.
+    pub flicker_speed: f32,
+    /// How much individual filaments blink out.
+    pub strand_flash: f32,
+    /// Extra heat on the leading edge while it travels.
+    pub tip_glow: f32,
+    /// Length of that leading edge, fraction of the span.
+    pub tip_length: f32,
+
+    // ── dynamic light ──
+    /// Base intensity of the cast light.
+    pub light_intensity: f32,
+    /// Radius of the cast light, metres.
+    pub light_radius: f32,
+    /// Depth of the light's gutter, `0` = steady.
+    pub light_flicker: f32,
+    /// Light gutter steps/second.
+    pub light_flicker_speed: f32,
+}
+
+impl Default for StormLanceParams {
+    fn default() -> Self {
+        Self {
+            range: 24.0,
+            min_range: 2.0,
+            speed: 105.0,
+            lifetime: 0.45,
+            fade_time: 0.5,
+            cooldown: 0.5,
+            speed_scale: 1.0,
+            randomness: 1.0,
+
+            hand_height: 1.28,
+            hand_forward: 0.55,
+            hand_side: 0.16,
+            end_height: 0.35,
+            sag: 0.22,
+
+            strands: 9.0,
+            spread: 0.75,
+            spread_near: 0.05,
+            spread_curve: 1.6,
+            twist: 0.45,
+            twist_speed: 0.8,
+            branch_dim: 0.72,
+
+            jitter: 0.34,
+            jitter_scale: 0.85,
+            octaves: 4.0,
+            jitter_falloff: 0.55,
+            crawl: 3.2,
+            pinch: 0.14,
+            converge: 0.8,
+
+            width: 0.025,
+            width_tip: 0.43,
+            width_curve: 1.09,
+            core_width: 1.31,
+
+            restrike: 24.0,
+            flicker: 0.3,
+            flicker_speed: 34.0,
+            strand_flash: 0.5,
+            tip_glow: 2.0,
+            tip_length: 0.08,
+
+            light_intensity: 26.0,
+            light_radius: 17.0,
+            light_flicker: 0.4,
+            light_flicker_speed: 26.0,
+        }
+    }
+}
+
+impl StormLanceParams {
+    /// How many filaments a cast spends: `clamp(round(strands), 1, 24)`.
+    pub fn strand_budget(&self) -> usize {
+        libm::roundf(self.strands).clamp(1.0, MAX_STRANDS as f32) as usize
+    }
+
+    /// Seconds the bolt holds once the front arrives (`max(0.05, lifetime)`).
+    pub fn impact_duration(&self) -> f32 {
+        self.lifetime.max(0.05)
+    }
+
+    /// Seconds the bolt takes to blow out (`max(0.05, fade_time)`).
+    pub fn fade_duration(&self) -> f32 {
+        self.fade_time.max(0.05)
+    }
+
+    /// Octave count clamped into the shader's fixed trip `1..5`.
+    pub fn octave_count(&self) -> u32 {
+        libm::roundf(self.octaves).clamp(1.0, 5.0) as u32
+    }
+}
+
+impl crate::aim::AimReach for StormLanceParams {
+    fn cast_range(&self) -> f32 {
+        self.range
+    }
+
+    fn cast_min_range(&self) -> f32 {
+        self.min_range
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -238,5 +448,44 @@ mod tests {
         };
         assert_eq!(flat.impact_duration(), 0.2);
         assert_eq!(flat.fade_duration(), 0.2);
+    }
+
+    #[test]
+    fn thunder_defaults_match_shipped_settings() {
+        let p = StormLanceParams::default();
+        assert_eq!(p.range, 24.0);
+        assert_eq!(p.min_range, 2.0);
+        assert_eq!(p.speed, 105.0);
+        assert_eq!(p.lifetime, 0.45);
+        assert_eq!(p.fade_time, 0.5);
+        assert_eq!(p.strands, 9.0);
+        assert_eq!(p.restrike, 24.0);
+        assert_eq!(p.jitter, 0.34);
+        assert_eq!(p.light_intensity, 26.0);
+        assert_eq!(p.strand_budget(), 9);
+        assert_eq!(p.octave_count(), 4);
+    }
+
+    #[test]
+    fn storm_budget_clamps_to_ceiling() {
+        let mut p = StormLanceParams::default();
+        p.strands = 100.0;
+        assert_eq!(p.strand_budget(), MAX_STRANDS);
+        p.strands = 0.0;
+        assert_eq!(p.strand_budget(), 1);
+    }
+
+    #[test]
+    fn storm_phase_durations_have_floors() {
+        let p = StormLanceParams::default();
+        assert!((p.impact_duration() - 0.45).abs() < f32::EPSILON);
+        assert!((p.fade_duration() - 0.5).abs() < f32::EPSILON);
+        let flat = StormLanceParams {
+            lifetime: 0.0,
+            fade_time: 0.0,
+            ..StormLanceParams::default()
+        };
+        assert_eq!(flat.impact_duration(), 0.05);
+        assert_eq!(flat.fade_duration(), 0.05);
     }
 }

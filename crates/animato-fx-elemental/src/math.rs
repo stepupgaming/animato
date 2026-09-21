@@ -59,6 +59,24 @@ pub fn out_quint(t: f32) -> f32 {
     1.0 - libm::powf(1.0 - t, 5.0)
 }
 
+/// GLSL `fract` — `x - floor(x)`.
+#[inline]
+pub fn fract(x: f32) -> f32 {
+    x - libm::floorf(x)
+}
+
+/// GLSL-style `hash11` from the upstream noise lib (`noise.glsl.js`).
+///
+/// Used by Storm Lance filament kinks / restrike so seek samples match the
+/// shader's deterministic shape clock.
+#[inline]
+pub fn hash11(p: f32) -> f32 {
+    let mut p = fract(p * 0.1031);
+    p *= p + 33.33;
+    p *= p + p;
+    fract(p)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -81,5 +99,11 @@ mod tests {
         assert_eq!(smoothstep(0.0, 1.0, 1.0), 1.0);
         assert!((smoothstep(0.0, 1.0, 0.5) - 0.5).abs() < 1e-6);
         assert_eq!(smoothstep(1.0, 1.0, 0.5), smoothstep(1.0, 1.0, 0.5));
+    }
+
+    #[test]
+    fn fract_and_hash11_bounded() {
+        assert!((0.0..1.0).contains(&fract(1.25)));
+        assert!((0.0..1.0).contains(&hash11(12.3)));
     }
 }
