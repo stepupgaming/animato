@@ -11,19 +11,22 @@
 //!   impact debris and molten fissures (MeteorAbility port).
 //! - [`NovaBeam`] / [`NovaBeamParams`] — Nova Beam (F) charge + sustained
 //!   parametric tube with shock discs (BeamAbility port).
+//! - [`VoltaicSnare`] / [`VoltaicSnareParams`] — Voltaic Snare (V) far-cast
+//!   zone trap with leash travel + lightning cage (SnareAbility port).
 //! - Time-driven: `seek_abs` re-simulates deterministically, so every pipeline
 //!   is drivable by `animato_composition::Composition` and
 //!   `animato_timeline::Timeline::seek_abs` — including while paused, with
 //!   params edited live (records store dice only; metres resolve at sample
 //!   time).
-//! - All four implement [`animato_core::Playable`] (`Send + 'static`).
+//! - All five implement [`animato_core::Playable`] (`Send + 'static`).
 //!
 //! ## Quick Start
 //!
 //! ```rust
 //! use animato_fx_elemental::{
 //!     CinderFall, CinderFallParams, FrostLance, FrostLanceParams, NovaBeam,
-//!     NovaBeamParams, StormLance, StormLanceParams,
+//!     NovaBeamParams, StormLance, StormLanceParams, VoltaicSnare,
+//!     VoltaicSnareParams,
 //! };
 //!
 //! let mut frost = FrostLance::with_params(FrostLanceParams::default());
@@ -45,6 +48,11 @@
 //! nova.cast([0.0, 0.0], [0.0, 1.0], 12.0, 7).unwrap();
 //! nova.seek_abs(0.2);
 //! assert_eq!(nova.phase(), animato_fx_elemental::Phase::Charge);
+//!
+//! let mut snare = VoltaicSnare::with_params(VoltaicSnareParams::default());
+//! snare.cast([0.0, 0.0], [0.0, 1.0], 12.0, 7).unwrap();
+//! snare.seek_abs(0.5);
+//! assert!(!snare.samples().is_empty());
 //! ```
 //!
 //! ## Attribution
@@ -57,9 +65,9 @@
 //!
 //! ## Scope
 //!
-//! Frost Lance, Storm Lance, Cinder Fall and Nova Beam are in-crate.
-//! Voltaic Snare — plus any Ext/Extended sandboxes — are follow-ups (see
-//! README).
+//! Frost Lance, Storm Lance, Cinder Fall, Nova Beam and Voltaic Snare are
+//! in-crate (ZONE casts are now supported via [`solve_zone_aim`]). Ext /
+//! Extended sandboxes remain follow-ups (see README).
 //!
 //! The optional `wgpu` feature (`gpu.rs`) is an instance-layout stub only,
 //! not a renderer: the default build stays GPU-free. See the crate README
@@ -82,16 +90,22 @@ pub mod storm;
 pub mod cinder;
 pub mod fissure;
 pub mod nova;
+pub mod cage;
+pub mod voltaic;
 
 #[cfg(feature = "wgpu")]
 pub mod gpu;
 
-pub use aim::{AimReach, AimSolution, solve_aim};
+pub use aim::{
+    AimReach, AimSolution, ZoneAimReach, ZoneAimSolution, solve_aim, solve_zone_aim,
+    solve_zone_aim_at,
+};
 pub use filament::{StrandNode, StrandRecord, StrandSample, roll_strands};
 pub use params::{
-    CinderFallParams, FISSURE_STEP, FrostLanceParams, IMPACT_FRACTION, MAX_CHUNKS,
-    MAX_COILS, MAX_FISSURE_ARMS, MAX_FISSURE_BRANCHES, MAX_RINGS, MAX_SPIKES,
-    MAX_STRANDS, NovaBeamParams, STRAND_NODES, StormLanceParams, TUBE_SEGMENTS,
+    CAGE_NODES, CinderFallParams, FISSURE_STEP, FrostLanceParams, IMPACT_FRACTION,
+    MAX_CHUNKS, MAX_COILS, MAX_COLUMN, MAX_FISSURE_ARMS, MAX_FISSURE_BRANCHES,
+    MAX_LEASH, MAX_RIM, MAX_RINGS, MAX_SPIKES, MAX_STRANDS, MAX_TENDRIL,
+    NovaBeamParams, STRAND_NODES, StormLanceParams, TUBE_SEGMENTS, VoltaicSnareParams,
 };
 pub use pipeline::{FrostEvent, FrostLance, FrostLight, Phase, SpawnError, SEEK_STEP};
 pub use rng::FxRng;
@@ -107,3 +121,9 @@ pub use nova::{
     NovaBeam, NovaEvent, NovaLight, OrbSample, RingRecord, RingSample, TubeNode,
     axis_point as beam_axis_point, beam_radius, roll_rings, sample_ring,
 };
+
+pub use cage::{
+    CageContext, CageNode, CageRecord, CageSample, FilamentRole, climb_amount, open_amount,
+    roll_cage, sample_cage, sample_filament,
+};
+pub use voltaic::{VoltaicEvent, VoltaicLight, VoltaicSnare};

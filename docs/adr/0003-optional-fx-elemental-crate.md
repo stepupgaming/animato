@@ -72,9 +72,11 @@ traits: it must land as an optional edge crate with unchanged defaults.
    chunk ballistics and molten fissures). **Nova Beam (F)** is now in-crate
    (`NovaBeam` / `NovaBeamParams` / `nova.rs` — BeamAbility port with
    first-class `Phase::Charge`, parametric tube and shock-disc train).
-   Remaining sandbox abilities (Voltaic Snare), Ext / Extended sandboxes,
-   and a full `wgpu` renderer backend (particles, decals,
-   ice/lightning/meteor/beam shading) are not started here.
+   **Voltaic Snare (V)** is now in-crate (`VoltaicSnare` /
+   `VoltaicSnareParams` / `cage.rs` — SnareAbility port with first-class
+   ZONE aim via `solve_zone_aim`, leash travel and lightning cage). Ext /
+   Extended sandboxes and a full `wgpu` renderer backend (particles, decals,
+   ice/lightning/meteor/beam/snare shading) are not started here.
 
 ## Consequences
 

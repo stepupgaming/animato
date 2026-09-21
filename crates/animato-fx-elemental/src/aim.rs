@@ -110,3 +110,151 @@ mod tests {
         assert!(s.valid);
     }
 }
+
+/// Zone-cast reach envelope (`VoltaicSnareParams`, …).
+///
+/// Far casts aim a circle at a floor point rather than a line. Upstream's
+/// `AimController` still measures a distance from the caster and clamps it,
+/// but this port **refuses** aims outside `cast_range` (in addition to the
+/// usual `min_range` refusal) so the planted centre is never silently
+/// pulled inward.
+pub trait ZoneAimReach: AimReach {
+    /// Footprint radius the circle indicator measures out, metres.
+    fn zone_radius(&self) -> f32;
+}
+
+/// Solved zone-cast target: origin, planted centre, unit heading, distance
+/// and footprint.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ZoneAimSolution {
+    /// Cast origin on the floor (`y = 0` plane).
+    pub origin: [f32; 2],
+    /// Planted trap centre on the floor.
+    pub center: [f32; 2],
+    /// Unit heading from origin toward the centre.
+    pub direction: [f32; 2],
+    /// Distance used for the leash travel, metres (clamped when valid).
+    pub distance: f32,
+    /// Raw requested distance before clamping.
+    pub raw_distance: f32,
+    /// Live footprint radius (`zone_radius`), metres.
+    pub zone_radius: f32,
+    /// `false` when nearer than `min_range` **or** farther than `range`.
+    pub valid: bool,
+    /// `true` when `raw_distance > range`.
+    pub too_far: bool,
+    /// `true` when `raw_distance < min_range`.
+    pub too_close: bool,
+}
+
+/// Solve a zone-cast aim from origin, heading and raw pointer distance.
+///
+/// ```text
+/// too_close = raw < min_range
+/// too_far   = raw > range
+/// valid     = !too_close && !too_far
+/// distance  = clamp(raw, max(0.2, min_range), max(0.4, range))   // when valid
+/// center    = origin + direction * distance
+/// ```
+pub fn solve_zone_aim(
+    params: &impl ZoneAimReach,
+    origin: [f32; 2],
+    direction: [f32; 2],
+    raw_distance: f32,
+) -> ZoneAimSolution {
+    let len = libm::sqrtf(direction[0] * direction[0] + direction[1] * direction[1]);
+    let direction = if len > 1e-6 {
+        [direction[0] / len, direction[1] / len]
+    } else {
+        [0.0, 1.0]
+    };
+    let min_range = params.cast_min_range();
+    let range = params.cast_range();
+    let too_close = raw_distance < min_range;
+    let too_far = raw_distance > range;
+    let valid = !too_close && !too_far;
+    let distance = if valid {
+        clamp(
+            raw_distance,
+            0.2f32.max(min_range),
+            0.4f32.max(range),
+        )
+    } else {
+        // Still report a clamped distance for indicator feedback.
+        clamp(
+            raw_distance,
+            0.2f32.max(min_range),
+            0.4f32.max(range),
+        )
+    };
+    let center = [
+        origin[0] + direction[0] * distance,
+        origin[1] + direction[1] * distance,
+    ];
+    ZoneAimSolution {
+        origin: [origin[0], origin[1]],
+        center,
+        direction,
+        distance,
+        raw_distance,
+        zone_radius: params.zone_radius().max(0.05),
+        valid,
+        too_far,
+        too_close,
+    }
+}
+
+/// Solve a zone-cast aim from an absolute floor aim-point.
+pub fn solve_zone_aim_at(
+    params: &impl ZoneAimReach,
+    origin: [f32; 2],
+    aim_point: [f32; 2],
+) -> ZoneAimSolution {
+    let dx = aim_point[0] - origin[0];
+    let dz = aim_point[1] - origin[1];
+    let raw = libm::sqrtf(dx * dx + dz * dz);
+    let direction = if raw > 1e-6 {
+        [dx / raw, dz / raw]
+    } else {
+        [0.0, 1.0]
+    };
+    solve_zone_aim(params, origin, direction, raw)
+}
+
+#[cfg(test)]
+mod zone_tests {
+    use super::*;
+    use crate::params::VoltaicSnareParams;
+
+    #[test]
+    fn zone_refuses_too_far_and_too_close() {
+        let p = VoltaicSnareParams::default();
+        // Default min_range is 0, so plant a temporary floor.
+        let mut tight = p.clone();
+        tight.min_range = 3.0;
+        let near = solve_zone_aim(&tight, [0.0, 0.0], [0.0, 1.0], 1.0);
+        assert!(!near.valid);
+        assert!(near.too_close);
+        assert!(!near.too_far);
+
+        let far = solve_zone_aim(&p, [0.0, 0.0], [0.0, 1.0], 99.0);
+        assert!(!far.valid);
+        assert!(far.too_far);
+        assert!(!far.too_close);
+
+        let mid = solve_zone_aim(&p, [0.0, 0.0], [0.0, 1.0], 12.0);
+        assert!(mid.valid);
+        assert!((mid.center[1] - 12.0).abs() < 1e-4);
+        assert!((mid.zone_radius - 4.4).abs() < 1e-4);
+    }
+
+    #[test]
+    fn zone_aim_at_matches_dir_form() {
+        let p = VoltaicSnareParams::default();
+        let a = solve_zone_aim_at(&p, [1.0, 2.0], [1.0, 14.0]);
+        let b = solve_zone_aim(&p, [1.0, 2.0], [0.0, 1.0], 12.0);
+        assert_eq!(a.valid, b.valid);
+        assert!((a.center[0] - b.center[0]).abs() < 1e-4);
+        assert!((a.center[1] - b.center[1]).abs() < 1e-4);
+    }
+}

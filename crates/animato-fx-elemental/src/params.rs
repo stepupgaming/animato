@@ -786,6 +786,317 @@ impl crate::aim::AimReach for NovaBeamParams {
     }
 }
 
+/// Hard ceiling on leash filaments (matches `MAX_LEASH` in `SnareAbility.js`).
+pub const MAX_LEASH: usize = 6;
+/// Hard ceiling on column filaments (matches `MAX_COLUMN`).
+pub const MAX_COLUMN: usize = 16;
+/// Hard ceiling on tendril filaments (matches `MAX_TENDRIL`).
+pub const MAX_TENDRIL: usize = 20;
+/// Hard ceiling on rim-arc filaments (matches `MAX_RIM`).
+pub const MAX_RIM: usize = 14;
+/// Sample nodes along one cage filament.
+pub const CAGE_NODES: usize = 48;
+
+/// Procedural parameters for the Voltaic Snare far-cast.
+///
+/// Mirrors the `snare` block of `src/config/settings.js`. Only CPU-resolved
+/// dimensions are carried — colours / particle rates / field-shader tuning
+/// stay GLSL downstream. Metres that scale under `zone_radius` (throat,
+/// column spread, tendril reach, rim jitter, …) are stored as **unit
+/// fractions** and multiplied by the live footprint at sample time, so editing
+/// `zone_radius` on a standing trap reshapes the cage with the clock stopped.
+#[derive(Clone, Debug, PartialEq)]
+pub struct VoltaicSnareParams {
+    // ── the cast ──
+    /// Maximum cast distance, metres.
+    pub range: f32,
+    /// Casts nearer than this are refused (`0` = plant underfoot is legal).
+    pub min_range: f32,
+    /// Footprint the circle indicator measures out, metres.
+    pub zone_radius: f32,
+    /// How fast the leash races to the point, metres/second.
+    pub speed: f32,
+    /// Seconds the ring takes to slam open once it lands.
+    pub snap_time: f32,
+    /// Seconds the snare stands (impact phase).
+    pub lifetime: f32,
+    /// Seconds it takes to collapse.
+    pub fade_time: f32,
+    /// Seconds before the ability can be armed again.
+    pub cooldown: f32,
+    /// Global speed multiplier (`settings.global.speed`).
+    pub speed_scale: f32,
+    /// Global randomness multiplier (`settings.global.randomness`).
+    pub randomness: f32,
+
+    // ── the leash that plants it ──
+    /// Metres above the floor at the hand.
+    pub hand_height: f32,
+    /// Metres in front of the caster.
+    pub hand_forward: f32,
+    /// Metres to the side (+ follows the cast `side`).
+    pub hand_side: f32,
+    /// Filaments in the whip.
+    pub leash_strands: f32,
+    /// Metres the mid-span bows (negative drops it to the floor).
+    pub leash_sag: f32,
+    /// How far the filaments separate, metres.
+    pub leash_spread: f32,
+    /// Kink amplitude on the whip, metres.
+    pub leash_kink: f32,
+    /// × the shared filament width.
+    pub leash_width: f32,
+    /// How far above the floor the tip runs, metres.
+    pub leash_cling: f32,
+
+    // ── the column ──
+    /// Filaments in the pillar.
+    pub strands: f32,
+    /// How high it reaches, metres.
+    pub height: f32,
+    /// `<1` gets it up fast, `>1` makes it climb late.
+    pub height_curve: f32,
+    /// Radius where it leaves the floor, × `zone_radius`.
+    pub throat: f32,
+    /// Radius at the top, × `zone_radius`.
+    pub column_spread: f32,
+    /// `>1` keeps the throat tight then opens it late.
+    pub column_curve: f32,
+    /// Extra opening over the last quarter, × `zone_radius`.
+    pub column_flare: f32,
+    /// Turns a filament makes over the climb.
+    pub column_twist: f32,
+    /// Turns/second the whole pillar rolls.
+    pub column_spin: f32,
+    /// Kink amplitude, metres.
+    pub column_kink: f32,
+    /// × the shared filament width.
+    pub column_width: f32,
+    /// How much thinner the top is than the base.
+    pub column_taper: f32,
+
+    // ── tendrils ──
+    /// Separate ground filaments.
+    pub tendrils: f32,
+    /// Where they leave the column, × `zone_radius`.
+    pub tendril_inner: f32,
+    /// Where they end, × `zone_radius` (`1` = exactly on the band).
+    pub tendril_reach: f32,
+    /// `<1` throws them outward early.
+    pub tendril_curve: f32,
+    /// Radians a tendril veers over its run.
+    pub tendril_wander: f32,
+    /// Metres it hops off the floor mid-span.
+    pub tendril_arch: f32,
+    /// How far above the floor it runs, metres.
+    pub tendril_hug: f32,
+    /// Turns/second the whole fan rotates.
+    pub tendril_spin: f32,
+    /// Kink amplitude, metres.
+    pub tendril_kink: f32,
+    /// × the shared filament width.
+    pub tendril_width: f32,
+    /// How much dimmer than the column.
+    pub tendril_dim: f32,
+
+    // ── rim arcs ──
+    /// Arcs on the boundary at once.
+    pub rim_arcs: f32,
+    /// Fraction of the circle one arc covers.
+    pub rim_span: f32,
+    /// Revolutions/second they travel.
+    pub rim_speed: f32,
+    /// Metres they hop at mid-span.
+    pub rim_height: f32,
+    /// Radial wobble, × `zone_radius`.
+    pub rim_jitter: f32,
+    /// Kink amplitude, metres.
+    pub rim_kink: f32,
+    /// × the shared filament width.
+    pub rim_width: f32,
+    /// How much dimmer than the column.
+    pub rim_dim: f32,
+
+    // ── shared filament shape ──
+    /// Master multiplier on the four per-role kink amplitudes.
+    pub jitter: f32,
+    /// Kinks per metre.
+    pub jitter_scale: f32,
+    /// Octave count, `1..5`.
+    pub octaves: f32,
+    /// Amplitude kept per octave.
+    pub jitter_falloff: f32,
+    /// How fast the kinks slide along a filament.
+    pub crawl: f32,
+    /// Fraction of the span the ends are pulled straight over.
+    pub pinch: f32,
+    /// Times/second every filament re-rolls its shape.
+    pub restrike: f32,
+    /// Depth of the whole-cage brightness stutter.
+    pub flicker: f32,
+    /// Stutters/second.
+    pub flicker_speed: f32,
+    /// How much individual filaments blink out.
+    pub strand_flash: f32,
+    /// Half-width of a filament, metres.
+    pub width: f32,
+
+    // ── dynamic light ──
+    /// Base intensity of the cast light.
+    pub light_intensity: f32,
+    /// Radius of the cast light, metres.
+    pub light_radius: f32,
+    /// How far up the column the light sits, `0..1`.
+    pub light_height: f32,
+    /// Depth of the light's gutter, `0` = steady.
+    pub light_flicker: f32,
+    /// Light gutter steps/second.
+    pub light_flicker_speed: f32,
+}
+
+impl Default for VoltaicSnareParams {
+    fn default() -> Self {
+        Self {
+            range: 20.0,
+            min_range: 0.0,
+            zone_radius: 4.4,
+            speed: 62.0,
+            snap_time: 0.16,
+            lifetime: 2.6,
+            fade_time: 0.75,
+            cooldown: 1.4,
+            speed_scale: 1.0,
+            randomness: 1.0,
+
+            hand_height: 1.24,
+            hand_forward: 0.58,
+            hand_side: 0.18,
+            leash_strands: 3.0,
+            leash_sag: -0.35,
+            leash_spread: 0.22,
+            leash_kink: 0.3,
+            leash_width: 1.0,
+            leash_cling: 0.12,
+
+            strands: 15.0,
+            height: 9.2,
+            height_curve: 1.45,
+            throat: 0.16,
+            column_spread: 0.25,
+            column_curve: 2.88,
+            column_flare: 0.585,
+            column_twist: 0.22,
+            column_spin: 1.26,
+            column_kink: 0.27,
+            column_width: 1.86,
+            column_taper: 1.09,
+
+            tendrils: 20.0,
+            tendril_inner: 0.0,
+            tendril_reach: 1.07,
+            tendril_curve: 1.18,
+            tendril_wander: 1.41,
+            tendril_arch: 1.16,
+            tendril_hug: 0.005,
+            tendril_spin: -0.225,
+            tendril_kink: 0.72,
+            tendril_width: 0.75,
+            tendril_dim: 0.8,
+
+            rim_arcs: 14.0,
+            rim_span: 0.335,
+            rim_speed: -1.84,
+            rim_height: 0.98,
+            rim_jitter: 0.23,
+            rim_kink: 0.15,
+            rim_width: 0.85,
+            rim_dim: 1.0,
+
+            jitter: 1.0,
+            jitter_scale: 1.4,
+            octaves: 4.0,
+            jitter_falloff: 0.55,
+            crawl: 2.4,
+            pinch: 0.16,
+            restrike: 21.0,
+            flicker: 0.26,
+            flicker_speed: 30.0,
+            strand_flash: 0.45,
+            width: 0.032,
+
+            light_intensity: 24.0,
+            light_radius: 18.0,
+            light_height: 0.38,
+            light_flicker: 0.38,
+            light_flicker_speed: 24.0,
+        }
+    }
+}
+
+impl VoltaicSnareParams {
+    /// Live footprint, metres (`max(0.05, zone_radius)`).
+    pub fn radius(&self) -> f32 {
+        self.zone_radius.max(0.05)
+    }
+
+    /// Leash filament budget: `clamp(round(leash_strands), 0, MAX_LEASH)`.
+    pub fn leash_budget(&self) -> usize {
+        libm::roundf(self.leash_strands).clamp(0.0, MAX_LEASH as f32) as usize
+    }
+
+    /// Column filament budget: `clamp(round(strands), 0, MAX_COLUMN)`.
+    pub fn column_budget(&self) -> usize {
+        libm::roundf(self.strands).clamp(0.0, MAX_COLUMN as f32) as usize
+    }
+
+    /// Tendril filament budget: `clamp(round(tendrils), 0, MAX_TENDRIL)`.
+    pub fn tendril_budget(&self) -> usize {
+        libm::roundf(self.tendrils).clamp(0.0, MAX_TENDRIL as f32) as usize
+    }
+
+    /// Rim-arc filament budget: `clamp(round(rim_arcs), 0, MAX_RIM)`.
+    pub fn rim_budget(&self) -> usize {
+        libm::roundf(self.rim_arcs).clamp(0.0, MAX_RIM as f32) as usize
+    }
+
+    /// Octave count clamped to `1..5`.
+    pub fn octave_count(&self) -> u32 {
+        libm::roundf(self.octaves).clamp(1.0, 5.0) as u32
+    }
+
+    /// Seconds the ring takes to slam open (`max(0.01, snap_time)`).
+    pub fn snap_duration(&self) -> f32 {
+        self.snap_time.max(0.01)
+    }
+
+    /// Seconds the snare stands (`max(0.05, lifetime)`).
+    pub fn impact_duration(&self) -> f32 {
+        self.lifetime.max(0.05)
+    }
+
+    /// Seconds the snare takes to collapse (`max(0.05, fade_time)`).
+    pub fn fade_duration(&self) -> f32 {
+        self.fade_time.max(0.05)
+    }
+}
+
+impl crate::aim::AimReach for VoltaicSnareParams {
+    fn cast_range(&self) -> f32 {
+        self.range
+    }
+
+    fn cast_min_range(&self) -> f32 {
+        self.min_range
+    }
+}
+
+impl crate::aim::ZoneAimReach for VoltaicSnareParams {
+    fn zone_radius(&self) -> f32 {
+        self.zone_radius
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -960,4 +1271,52 @@ mod tests {
         assert_eq!(flat.impact_duration(), 0.05);
         assert_eq!(flat.fade_duration(), 0.05);
     }
+
+    #[test]
+    fn snare_defaults_match_shipped_settings() {
+        let p = VoltaicSnareParams::default();
+        assert_eq!(p.range, 20.0);
+        assert_eq!(p.min_range, 0.0);
+        assert_eq!(p.zone_radius, 4.4);
+        assert_eq!(p.speed, 62.0);
+        assert_eq!(p.snap_time, 0.16);
+        assert_eq!(p.lifetime, 2.6);
+        assert_eq!(p.fade_time, 0.75);
+        assert_eq!(p.height, 9.2);
+        assert_eq!(p.leash_strands, 3.0);
+        assert_eq!(p.strands, 15.0);
+        assert_eq!(p.tendrils, 20.0);
+        assert_eq!(p.rim_arcs, 14.0);
+        assert_eq!(p.light_intensity, 24.0);
+        assert_eq!(p.leash_budget(), 3);
+        assert_eq!(p.column_budget(), 15);
+        assert_eq!(p.tendril_budget(), 20);
+        assert_eq!(p.rim_budget(), 14);
+    }
+
+    #[test]
+    fn snare_budgets_and_floors() {
+        let mut p = VoltaicSnareParams::default();
+        p.strands = 100.0;
+        assert_eq!(p.column_budget(), MAX_COLUMN);
+        p.tendrils = 100.0;
+        assert_eq!(p.tendril_budget(), MAX_TENDRIL);
+        p.rim_arcs = 100.0;
+        assert_eq!(p.rim_budget(), MAX_RIM);
+        p.leash_strands = 100.0;
+        assert_eq!(p.leash_budget(), MAX_LEASH);
+        assert!((p.snap_duration() - 0.16).abs() < f32::EPSILON);
+        assert!((p.impact_duration() - 2.6).abs() < f32::EPSILON);
+        assert!((p.fade_duration() - 0.75).abs() < f32::EPSILON);
+        let flat = VoltaicSnareParams {
+            snap_time: 0.0,
+            lifetime: 0.0,
+            fade_time: 0.0,
+            ..VoltaicSnareParams::default()
+        };
+        assert_eq!(flat.snap_duration(), 0.01);
+        assert_eq!(flat.impact_duration(), 0.05);
+        assert_eq!(flat.fade_duration(), 0.05);
+    }
+
 }

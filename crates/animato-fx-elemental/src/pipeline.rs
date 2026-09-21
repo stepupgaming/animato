@@ -60,6 +60,13 @@ pub enum SpawnError {
         /// Minimum allowed distance in metres.
         min: f32,
     },
+    /// Aimed farther than `range` (zone casts refuse rather than clamp).
+    TooFar {
+        /// Requested distance in metres.
+        raw: f32,
+        /// Maximum allowed distance in metres.
+        max: f32,
+    },
 }
 
 impl core::fmt::Display for SpawnError {
@@ -67,6 +74,9 @@ impl core::fmt::Display for SpawnError {
         match *self {
             SpawnError::TooClose { raw, min } => {
                 write!(f, "cast refused: {raw:.2} m < min_range {min:.2} m")
+            }
+            SpawnError::TooFar { raw, max } => {
+                write!(f, "cast refused: {raw:.2} m > range {max:.2} m")
             }
         }
     }

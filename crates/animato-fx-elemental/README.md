@@ -1,8 +1,8 @@
 # animato-fx-elemental
 
 Optional elemental-VFX edge crate for Animato (pure Rust, no browser /
-Three.js required): seekable, time-driven ports of **line-cast ability pipelines** —
-**Frost Lance (Q)**, **Storm Lance (E)**, **Cinder Fall (R)** and **Nova Beam (F)** — from
+Three.js required): seekable, time-driven ports of **line-cast and zone-cast ability pipelines** —
+**Frost Lance (Q)**, **Storm Lance (E)**, **Cinder Fall (R)**, **Nova Beam (F)** and **Voltaic Snare (V)** — from
 achrefelouafi's `LinearAbiltyCastingThreeJS` sandbox (MIT).
 
 It contains no renderer: the pipeline resolves every spike transform, the
@@ -46,11 +46,17 @@ drive, and it ports without raymarching, ribbon strips or parametric tubes.
 | `src/config/settings.js` — `beam` block | `src/params.rs::NovaBeamParams` (`Default` = shipped values) | CPU-resolved dims only; colours / particle rates / coil ribbons stay GLSL downstream |
 | `src/assets/ProceduralGeometry.js` — beam tube / ring annulus | *Downstream renderer* | `TubeNode` / `RingSample` expose radii; geometry bake stays renderer-owned |
 
+| `src/abilities/SnareAbility.js` — zone aim, leash travel, snap-open cage, hold + collapse | `src/voltaic.rs` + `src/cage.rs` | First **ZONE** cast; leash/column/tendril/rim ribbons / field / particles stay renderer-owned; CPU samples expose cage polylines + `VoltaicEvent` + `VoltaicLight` |
+| `src/materials/SnareMaterial.js` — role paths, kink, restrike | `src/cage.rs` (`path_at`, `kink`, `sample_filament`) | Metres scale under live `zone_radius` at sample time |
+| `src/config/settings.js` — `snare` block | `src/params.rs::VoltaicSnareParams` (`Default` = shipped values) | CPU-resolved dims only; colours / particle rates / field shader stay GLSL downstream |
+| `src/input/AimController.js` — zone circle, `[minRange, range]` | `src/aim.rs::solve_zone_aim` | Refuses outside `range` (line casts still clamp); floor-plane math only |
+
 ## Time model
 
 - `FrostLance::update(dt)` — live playback (frame-rate independent, like `Ability#update`).
 - `FrostLance::seek_abs(t)` / `StormLance::seek_abs(t)` /
-  `CinderFall::seek_abs(t)` / `NovaBeam::seek_abs(t)` — deterministic
+  `CinderFall::seek_abs(t)` / `NovaBeam::seek_abs(t)` /
+  `VoltaicSnare::seek_abs(t)` — deterministic
   re-simulation from spawn at a fixed 1/480 s step (`SEEK_STEP`): same
   `(seed, params, time)` ⇒ same state. Storm Lance additionally re-rolls
   filament shape from `seed + floor(age * restrike)` at sample time;
@@ -58,7 +64,7 @@ drive, and it ports without raymarching, ribbon strips or parametric tubes.
   polylines at sample time; Nova Beam resolves the parametric tube,
   shock-disc train and charge orb at sample time (with a first-class
   `Phase::Charge` before travel).
-- All four implement `animato_core::{Playable, Update}` (`Send +
+- All five implement `animato_core::{Playable, Update}` (`Send +
   'static`), so they compose directly:
 
 ```rust
@@ -103,8 +109,8 @@ parameter defaults, re-expressed in renderer-agnostic Rust.
 
 ## Follow-ups (not started)
 
-- Remaining sandbox abilities: **Voltaic Snare** (far-cast circle + ribbon
-  cage). **Storm Lance**, **Cinder Fall** and **Nova Beam** are now in-crate.
+- Remaining sandbox abilities beyond the five in-crate ports (Frost / Storm /
+  Cinder / Nova / Voltaic). **Voltaic Snare** is now in-crate (first ZONE cast).
 - Ext / Extended sandboxes.
 - Full `wgpu` renderer backend (particles, decals, ice shading) behind the
   `wgpu` feature; default build stays GPU-free so `cargo test` needs no GPU.
