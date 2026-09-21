@@ -1,2 +1,4 @@
 `frost_lance.mp4` — Cinematic 1280×720 card demo: Frost Lance (Q) line-cast from aim lock, fracture front racing down the 12 m line, spike field erupting behind it (dense at the caster, wall of blades + impact cluster at the far end), impact punch with shockwave rings, then withdrawal into the floor. Every transform is sampled from the real `animato-fx-elemental` Rust pipeline via `frost_lance_frames.json`.
 `frost_lance.gif` — 640px embeddable preview of the same clip for issue #1.
+`storm_lance.mp4` — Cinematic 1280×720 card demo: Storm Lance (E) bolt from aim lock, strike front racing down the 12 m line, filament bundle cracking behind it with restrike, impact hold + electric flash, then cubic blow-out. Every polyline is sampled from the real `animato-fx-elemental` Rust pipeline via `storm_lance_frames.json`.
+`storm_lance.gif` — 640px embeddable preview of the Storm Lance clip for issue #1 / PR #2.
