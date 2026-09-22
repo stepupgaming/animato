@@ -13,3 +13,5 @@
 
 `pyre_crown.mp4` — Cinematic 1280×720 top-down card demo: Pyre Crown (Q, Ext) zone cast from aim lock, fire front racing to the planted circle, ring-of-flame bloom with skirt banking under `zone_radius`, then burn-out/ash. Every blade transform is sampled from the real `animato-fx-elemental` Rust pipeline via `pyre_crown_frames.json`.
 `pyre_crown.gif` — 640px embeddable preview of the Pyre Crown clip for issue #1 / PR #2.
+`kraken_crown.mp4` — Cinematic 1280×720 top-down card demo: Kraken Crown (E, Ext) zone cast from aim lock, wet surge racing to the planted circle, abyss rift tear with tentacles hauling out and hammering the middle under `zone_radius`, then withdrawal. Every tentacle transform is sampled from the real `animato-fx-elemental` Rust pipeline via `kraken_crown_frames.json`.
+`kraken_crown.gif` — 640px embeddable preview of the Kraken Crown clip for issue #1 / PR #2.

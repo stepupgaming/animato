@@ -2,9 +2,9 @@
 """Render cinematic 1280x720 Elemental Lab product-demo clips.
 
 Every transform comes from the REAL Rust pipeline dumps
-(``dump_frost_lance`` / ``dump_storm_lance`` / ``dump_cinder_fall`` / ``dump_nova_beam`` / ``dump_voltaic_snare`` / ``dump_glacial_crown`` / ``dump_pyre_crown``).
+(``dump_frost_lance`` / ``dump_storm_lance`` / ``dump_cinder_fall`` / ``dump_nova_beam`` / ``dump_voltaic_snare`` / ``dump_glacial_crown`` / ``dump_pyre_crown`` / ``dump_kraken_crown``).
 This script only handles presentation — dark glassy card UI, ice/cyan,
-storm/blue, cinder/ember, nova/cyan-gold, voltaic/violet, glacial/ice or pyre/fire palette, ffmpeg H.264 + GIF for issue embeds.
+storm/blue, cinder/ember, nova/cyan-gold, voltaic/violet, glacial/ice, pyre/fire or kraken/teal palette, ffmpeg H.264 + GIF for issue embeds.
 
 Usage:
     python3 render_fx_elemental.py [--ability frost|storm|cinder|nova|snare|glacial|pyre|all] [--output DIR] [--regen]
@@ -2040,10 +2040,305 @@ def render_pyre(output: Path, dump_path: Path, regen: bool) -> None:
     encode_gif(mp4, output / "pyre_crown.gif")
 
 
+
+# ── Kraken Crown (E, Ext) — top-down abyss rift / tentacle card ───────────────
+
+KRAKEN_SUBTITLES = {
+    "Travel": "wet surge racing across the floor — planting the circle",
+    "Impact": "rift tear — arms haul out and hammer the middle",
+    "Fade": "withdrawal — arms pulled back, water closing over",
+    "Done": "pipeline complete — ready for the next cast",
+    "Idle": "zone aim locked — cast armed",
+}
+
+KRAKEN_CHIPS = {
+    "Travel": "TRAVEL — WET SURGE",
+    "Impact": "IMPACT — HAMMERING",
+    "Fade": "FADE — WITHDRAW",
+    "Done": "DONE",
+    "Idle": "ZONE — CAST ARMED",
+}
+
+TEAL_HOT = (232, 255, 248)
+TEAL_CORE = (63, 224, 200)
+TEAL_EDGE = (46, 214, 200)
+TEAL_INK = (14, 40, 48)
+TEAL_WHIP = (127, 184, 198)
+
+
+def load_kraken_dump(dump_path: Path, regen: bool) -> dict:
+    if regen or not dump_path.exists() or dump_path.stat().st_size == 0:
+        cargo = shutil.which("cargo")
+        if cargo is None:
+            raise RuntimeError("cargo is required to regenerate the frame dump")
+        print(f"regenerating {dump_path} via dump_kraken_crown example…")
+        subprocess.run(
+            [cargo, "run", "-q", "-p", "animato-fx-elemental",
+             "--example", "dump_kraken_crown", "--", str(dump_path)],
+            cwd=REPO_ROOT,
+            check=True,
+        )
+    with open(dump_path) as f:
+        return json.load(f)
+
+
+def kraken_phase_boundaries(frames: list[dict]) -> tuple[float, float, float]:
+    travel_end = fade_start = frames[-1]["t"]
+    for fr in frames:
+        if fr["phase"] == "Impact":
+            travel_end = fr["t"]
+            break
+    for fr in frames:
+        if fr["phase"] == "Fade":
+            fade_start = fr["t"]
+            break
+    return travel_end, fade_start, frames[-1]["t"]
+
+
+def kraken_world_to_screen(x: float, z: float, cx: float, cz: float) -> tuple[float, float]:
+    half = 9.0
+    px = PLOT_X + PLOT_W * 0.5 + (x - cx) * (PLOT_W * 0.5 / half)
+    py = PLOT_Y + PLOT_H * 0.5 - (z - cz) * (PLOT_H * 0.5 / half)
+    return (px, py)
+
+
+def kraken_base_scene(kicker, title, subtitle, chip, right_meta):
+    image = BACKGROUND.copy()
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((68, 48, 1212, 672), radius=22, fill=CARD, outline=(20, 80, 90, 230), width=2)
+    draw.line((96, 166, 1184, 166), fill=(20, 80, 90, 190), width=1)
+    draw.text((120, 78), kicker, font=FONT_KICKER, fill=(94, 230, 220))
+    draw.text((120, 101), title, font=FONT_TITLE, fill=(220, 248, 245))
+    draw.text((120, 140), subtitle, font=FONT_SUBTITLE, fill=MUTED)
+    chip_w = max(130, int(draw.textlength(chip, font=FONT_CHIP) + 48))
+    chip_x = 1160 - chip_w
+    draw.rounded_rectangle((chip_x, 91, 1160, 125), radius=17, fill=(6, 28, 32, 245), outline=(63, 224, 200, 220), width=1)
+    draw.ellipse((chip_x + 14, 103, chip_x + 21, 110), fill=TEAL_EDGE)
+    draw.text((chip_x + 31, 99), chip, font=FONT_CHIP, fill=(180, 240, 230))
+    draw.rounded_rectangle(
+        (PLOT_X - 1, PLOT_Y - 1, PLOT_X + PLOT_W + 1, PLOT_Y + PLOT_H + 1),
+        radius=12, fill=PLOT_BG, outline=(30, 100, 110, 255), width=2,
+    )
+    for x in range(PLOT_X + 40, PLOT_X + PLOT_W, 80):
+        draw.line((x, PLOT_Y + 2, x, PLOT_Y + PLOT_H - 2), fill=GRID, width=1)
+    for y in range(PLOT_Y + 40, PLOT_Y + PLOT_H, 56):
+        draw.line((PLOT_X + 2, y, PLOT_X + PLOT_W - 2, y), fill=GRID, width=1)
+    draw.text((PLOT_X + 22, PLOT_Y + 16), "LIVE PREVIEW  —  FROM RUST DUMP  —  TOP-DOWN", font=FONT_PLOT, fill=(60, 170, 170))
+    draw.text((PLOT_X + PLOT_W - 150, PLOT_Y + 16), right_meta, font=FONT_TINY, fill=(50, 140, 140))
+    draw.text((120, 625), "ANIMATO  /  ELEMENTAL LAB", font=FONT_META_BOLD, fill=(50, 140, 140))
+    draw.text((370, 625), "KRAKEN CROWN (E, EXT)  —  SEEDED, SEEKABLE ZONE CAST", font=FONT_META, fill=(40, 120, 120))
+    return image
+
+
+def kraken_frame(frame: dict, dump: dict, bounds: tuple) -> Image.Image:
+    travel_end, fade_start, total = bounds
+    phase = frame["phase"]
+    t = frame["t"]
+    image = kraken_base_scene(
+        "EXT SANDBOX  /  KRAKEN CROWN (E)",
+        "KRAKEN CROWN",
+        KRAKEN_SUBTITLES.get(phase, ""),
+        KRAKEN_CHIPS.get(phase, phase.upper()),
+        "SEED 7  /  SEEKABLE",
+    )
+    cx, cz = frame["center"]
+    zone_r = float(dump["zone_radius"])
+    fade = max(0.0, min(1.0, float(frame.get("fade", 1.0))))
+    open_amt = max(0.0, float(frame.get("open", 0.0)))
+    origin = dump.get("origin", [0.0, 0.0])
+    half = 9.0
+
+    field = frame.get("field")
+    if field and open_amt > 0.02:
+        wash, wdraw = alpha_layer()
+        r_px = float(field["r"]) * float(field.get("open", open_amt)) * (PLOT_W * 0.5 / half)
+        c = kraken_world_to_screen(cx, cz, cx, cz)
+        alpha = int(90 * fade * min(1.0, float(field.get("fade", open_amt))))
+        wdraw.ellipse(
+            (c[0] - r_px, c[1] - r_px, c[0] + r_px, c[1] + r_px),
+            fill=(8, 40, 50, alpha),
+        )
+        band = max(4, int(0.5 * (PLOT_W * 0.5 / half)))
+        wdraw.ellipse(
+            (c[0] - r_px, c[1] - r_px, c[0] + r_px, c[1] + r_px),
+            outline=(127, 245, 226, int(220 * fade * min(1.0, open_amt))),
+            width=band,
+        )
+        # throat
+        throat = r_px * 0.28
+        wdraw.ellipse(
+            (c[0] - throat, c[1] - throat, c[0] + throat, c[1] + throat),
+            fill=(5, 13, 20, int(180 * fade * open_amt)),
+        )
+        image.alpha_composite(wash.filter(ImageFilter.GaussianBlur(3)))
+
+    veil = frame.get("veil")
+    if veil and float(veil.get("opacity", 0)) > 0.01:
+        overlay, odraw = alpha_layer()
+        c = kraken_world_to_screen(cx, cz, cx, cz)
+        r_px = float(veil["r"]) * (PLOT_W * 0.5 / half)
+        a = int(100 * fade * float(veil["opacity"]))
+        odraw.ellipse(
+            (c[0] - r_px, c[1] - r_px, c[0] + r_px, c[1] + r_px),
+            outline=(180, 240, 245, a),
+            width=5,
+        )
+        image.alpha_composite(overlay.filter(ImageFilter.GaussianBlur(2)))
+
+    if t < 0.35 and phase in ("Travel", "Idle"):
+        overlay, odraw = alpha_layer()
+        o = kraken_world_to_screen(origin[0], origin[1], cx, cz)
+        c = kraken_world_to_screen(cx, cz, cx, cz)
+        steps = 20
+        for i in range(steps):
+            if i % 2 == 0:
+                s0 = i / steps
+                s1 = min(1.0, (i + 0.55) / steps)
+                p0 = (o[0] + (c[0] - o[0]) * s0, o[1] + (c[1] - o[1]) * s0)
+                p1 = (o[0] + (c[0] - o[0]) * s1, o[1] + (c[1] - o[1]) * s1)
+                odraw.line((p0, p1), fill=(94, 230, 220, 200), width=2)
+        r_px = zone_r * (PLOT_W * 0.5 / half)
+        odraw.ellipse(
+            (c[0] - r_px, c[1] - r_px, c[0] + r_px, c[1] + r_px),
+            outline=(94, 230, 220, 160),
+            width=2,
+        )
+        image.alpha_composite(overlay)
+
+    if phase == "Travel":
+        tip = frame.get("front_pos", [0.0, 0.0])
+        tp = kraken_world_to_screen(tip[0], tip[1], cx, cz)
+        glow, gdraw = alpha_layer()
+        gdraw.ellipse((tp[0] - 10, tp[1] - 10, tp[0] + 10, tp[1] + 10), fill=(63, 224, 200, 140))
+        image.alpha_composite(glow.filter(ImageFilter.GaussianBlur(4)))
+        ImageDraw.Draw(image).ellipse((tp[0] - 4, tp[1] - 4, tp[0] + 4, tp[1] + 4), fill=TEAL_HOT)
+
+    glow, gdraw = alpha_layer()
+    core, cdraw = alpha_layer()
+    for arm in frame.get("arms", []):
+        e = max(0.0, min(1.2, float(arm.get("emerge", 0.0))))
+        if e <= 0.02:
+            continue
+        sx, sz = float(arm["x"]), float(arm["z"])
+        tip = arm.get("tip", [sx, 0.0, sz])
+        p = kraken_world_to_screen(sx, sz, cx, cz)
+        tip_p = kraken_world_to_screen(float(tip[0]), float(tip[2]), cx, cz)
+        # Bend toward tip using lean as curvature hint — draw seat→tip arc via mid pull.
+        lean = float(arm.get("lean", 0.0))
+        mx = (p[0] + tip_p[0]) * 0.5
+        my = (p[1] + tip_p[1]) * 0.5
+        # Pull mid point outward (negative lean) or inward.
+        dx, dy = tip_p[0] - p[0], tip_p[1] - p[1]
+        nx, ny = -dy, dx
+        nlen = math.hypot(nx, ny) or 1.0
+        pull = lean * 12.0
+        mid = (mx + (nx / nlen) * pull, my + (ny / nlen) * pull)
+        role = arm.get("role", "Arm")
+        flash = max(0.0, float(arm.get("flash", 0.0)))
+        striking = bool(arm.get("striking", False))
+        if role == "Arm":
+            color = TEAL_CORE
+            width = max(2, min(5, int(float(arm.get("th", 0.3)) * 8)))
+            a = int(245 * fade * min(1.0, e))
+        else:
+            color = TEAL_WHIP
+            width = max(1, min(3, int(float(arm.get("th", 0.2)) * 10)))
+            a = int(200 * fade * min(1.0, e))
+        if flash > 0.15 or striking:
+            a = min(255, a + int(flash * 60))
+            color = TEAL_HOT
+        gdraw.line((p, mid), fill=(20, 80, 90, max(20, a // 2)), width=width + 3)
+        gdraw.line((mid, tip_p), fill=(20, 80, 90, max(20, a // 2)), width=width + 2)
+        cdraw.line((p, mid), fill=(*color, a), width=width)
+        cdraw.line((mid, tip_p), fill=(*color, a), width=max(1, width - 1))
+        rr = max(1, int(float(arm.get("th", 0.2)) * (PLOT_W * 0.5 / half) * 0.4))
+        cdraw.ellipse((p[0] - rr, p[1] - rr, p[0] + rr, p[1] + rr), fill=(*TEAL_INK, a))
+        if flash > 0.2:
+            tr = max(2, int(4 + flash * 6))
+            gdraw.ellipse(
+                (tip_p[0] - tr, tip_p[1] - tr, tip_p[0] + tr, tip_p[1] + tr),
+                fill=(232, 255, 248, int(180 * flash)),
+            )
+
+    image.alpha_composite(glow.filter(ImageFilter.GaussianBlur(1)))
+    image.alpha_composite(core)
+
+    draw = ImageDraw.Draw(image)
+    o = kraken_world_to_screen(origin[0], origin[1], cx, cz)
+    c = kraken_world_to_screen(cx, cz, cx, cz)
+    draw.ellipse((o[0] - 5, o[1] - 5, o[0] + 5, o[1] + 5), fill=(94, 230, 220, 220))
+    if open_amt > 0.05:
+        draw.ellipse((c[0] - 4, c[1] - 4, c[0] + 4, c[1] + 4), fill=(232, 255, 248, int(200 * fade)))
+
+    if phase == "Impact":
+        age_i = t - travel_end
+        flash = max(0.0, 0.35 - age_i * 1.0)
+        if flash > 0.0:
+            veil_flash, _ = alpha_layer()
+            ImageDraw.Draw(veil_flash).rectangle(
+                (PLOT_X, PLOT_Y, PLOT_X + PLOT_W, PLOT_Y + PLOT_H),
+                fill=(94, 230, 220, int(flash * 140)),
+            )
+            image.alpha_composite(veil_flash)
+
+    progress = 0.0 if total <= 0 else clamp(t / total, 0.0, 1.0)
+    bar_x0, bar_y0, bar_x1 = 120, 600, 1160
+    draw.rounded_rectangle((bar_x0, bar_y0, bar_x1, bar_y0 + 8), radius=4, fill=(8, 32, 36, 220))
+    fill_x = bar_x0 + (bar_x1 - bar_x0) * progress
+    draw.rounded_rectangle((bar_x0, bar_y0, fill_x, bar_y0 + 8), radius=4, fill=(*TEAL_EDGE, 230))
+    for boundary, _tag in ((travel_end, "TEAR"), (fade_start, "FADE")):
+        if total > 0:
+            bx = bar_x0 + (bar_x1 - bar_x0) * (boundary / total)
+            draw.line((bx, bar_y0 - 2, bx, bar_y0 + 10), fill=(140, 230, 220, 200), width=1)
+
+    meta = (
+        f"t={t:5.2f}s   open={open_amt:4.2f}   "
+        f"close={float(frame.get('close', 0)):4.2f}   "
+        f"arms={len(frame.get('arms', []))}"
+    )
+    draw.text((120, 575), meta, font=FONT_TINY, fill=(100, 190, 180))
+    return image.convert("RGB")
+
+
+def encode_kraken_mp4(frames, dump, bounds, output: Path) -> None:
+    command = [
+        "ffmpeg", "-y", "-f", "rawvideo", "-vcodec", "rawvideo",
+        "-pix_fmt", "rgb24", "-s", f"{WIDTH}x{HEIGHT}", "-r", str(FPS),
+        "-i", "-", "-an", "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+        "-profile:v", "high", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+        str(output),
+    ]
+    with subprocess.Popen(command, stdin=subprocess.PIPE) as process:
+        assert process.stdin is not None
+        for i, frame in enumerate(frames):
+            if i % FPS == 0:
+                print(f"kraken_crown: frame {i:03d}/{len(frames)}")
+            pixels = np.asarray(kraken_frame(frame, dump, bounds), dtype=np.uint8)
+            process.stdin.write(pixels.tobytes())
+        process.stdin.close()
+        if process.wait() != 0:
+            raise RuntimeError("ffmpeg failed while encoding kraken_crown.mp4")
+    print(f"{output}: {output.stat().st_size:,} bytes")
+
+
+def render_kraken(output: Path, dump_path: Path, regen: bool) -> None:
+    dump = load_kraken_dump(dump_path, regen)
+    frames = dump["frames"]
+    bounds = kraken_phase_boundaries(frames)
+    print(
+        f"kraken dump: {len(frames)} frames, "
+        f"total={dump['total_duration']:.2f}s, zone_r={dump['zone_radius']:.2f}m"
+    )
+    mp4 = output / "kraken_crown.mp4"
+    encode_kraken_mp4(frames, dump, bounds, mp4)
+    encode_gif(mp4, output / "kraken_crown.gif")
+
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--ability", choices=("frost", "storm", "cinder", "nova", "snare", "glacial", "pyre", "all"), default="pyre",
-                        help="which cinematic card to render (default: pyre)")
+    parser.add_argument("--ability", choices=("frost", "storm", "cinder", "nova", "snare", "glacial", "pyre", "kraken", "all"), default="kraken",
+                        help="which cinematic card to render (default: kraken)")
     parser.add_argument("--output", type=Path, default=HERE)
     parser.add_argument("--dump", type=Path, default=None,
                         help="override dump path (defaults per ability)")
@@ -2052,7 +2347,7 @@ def main() -> None:
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
 
-    abilities = ["frost", "storm", "cinder", "nova", "snare", "glacial", "pyre"] if args.ability == "all" else [args.ability]
+    abilities = ["frost", "storm", "cinder", "nova", "snare", "glacial", "pyre", "kraken"] if args.ability == "all" else [args.ability]
     for ability in abilities:
         if ability == "frost":
             dump = args.dump or (HERE / "frost_lance_frames.json")
@@ -2072,9 +2367,12 @@ def main() -> None:
         elif ability == "glacial":
             dump = args.dump or (HERE / "glacial_crown_frames.json")
             render_glacial(args.output, dump, args.regen)
-        else:
+        elif ability == "pyre":
             dump = args.dump or (HERE / "pyre_crown_frames.json")
             render_pyre(args.output, dump, args.regen)
+        else:
+            dump = args.dump or (HERE / "kraken_crown_frames.json")
+            render_kraken(args.output, dump, args.regen)
 
 
 if __name__ == "__main__":
