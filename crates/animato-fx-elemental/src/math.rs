@@ -65,6 +65,16 @@ pub fn out_quint(t: f32) -> f32 {
     1.0 - libm::powf(1.0 - t, 5.0)
 }
 
+/// `t >= 1 ? 1 : 1 - 2^(-10 t)` — fire surge snap (`Easing.outExpo`).
+#[inline]
+pub fn out_expo(t: f32) -> f32 {
+    if t >= 1.0 {
+        1.0
+    } else {
+        1.0 - libm::powf(2.0, -10.0 * t)
+    }
+}
+
 /// GLSL `fract` — `x - floor(x)`.
 #[inline]
 pub fn fract(x: f32) -> f32 {
@@ -97,6 +107,8 @@ mod tests {
         assert_eq!(out_cubic(0.0), 0.0);
         assert_eq!(out_cubic(1.0), 1.0);
         assert_eq!(out_quint(1.0), 1.0);
+        assert_eq!(out_expo(0.0), 0.0);
+        assert_eq!(out_expo(1.0), 1.0);
         assert!((out_quad(0.5) - 0.75).abs() < 1e-6);
         assert!((out_quint(0.5) - 0.96875).abs() < 1e-5);
     }

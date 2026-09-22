@@ -1,12 +1,14 @@
 # Attribution — elemental VFX source
 
-`animato-fx-elemental` ports the **Frost Lance (Q)**, **Storm Lance (E)**, **Cinder Fall (R)**, **Nova Beam (F)**, **Voltaic Snare (V)** and **Glacial Crown (X)** ability pipelines from:
+`animato-fx-elemental` ports the **Frost Lance (Q)**, **Storm Lance (E)**, **Cinder Fall (R)**, **Nova Beam (F)**, **Voltaic Snare (V)** and **Glacial Crown (X)** ability pipelines from LinearAbilityCastingThreeJS, and the Ext **Pyre Crown (Q)** pipeline from LinearAbilityExtThreeJS:
 
 - **Project:** [LinearAbiltyCastingThreeJS](https://github.com/achrefelouafi/LinearAbiltyCastingThreeJS)
   ("Elemental Sandbox" — a skillshot VFX sandbox built with Three.js, Vite
   and hand-written GLSL)
+- **Ext project:** [LinearAbilityExtThreeJS](https://github.com/achrefelouafi/LinearAbilityExtThreeJS)
+  (extended elemental abilities — Pyre Crown, Kraken Crown, …)
 - **Author:** [achrefelouafi](https://github.com/achrefelouafi)
-- **License:** MIT (see the `LICENSE` file at the repository root above)
+- **License:** MIT (see each repository's `LICENSE`)
 
 ## What was taken
 
@@ -19,9 +21,11 @@ Only the intangible structure, re-expressed in renderer-agnostic Rust:
   Nova Beam charge / tube / ring logic (`BeamAbility.js`), Voltaic Snare
   zone / leash / cage logic (`SnareAbility.js` + `SnareMaterial.js`), Glacial
   Crown zone / ring / skirt / veil logic (`GlacierAbility.js` +
-  `GlacierMaterial.js` / `FrostFieldMaterial.js`), timing curves and the
-  dice-only record rule;
-- the `ice`, `thunder`, `meteor`, `beam`, `snare` and `glacier` parameter-block defaults (`src/config/settings.js`);
+  `GlacierMaterial.js` / `FrostFieldMaterial.js`), Pyre Crown zone / ring /
+  skirt / burn-out logic (`PyreAbility.js` + `PyreMaterial.js` /
+  `EmberFieldMaterial.js`), timing curves and the dice-only record rule;
+- the `ice`, `thunder`, `meteor`, `beam`, `snare`, `glacier` and Ext `pyre`
+  parameter-block defaults (`src/config/settings.js`);
 - the aim-clamp / `minRange`-refusal rule and zone-cast circle solve (`src/input/AimController.js`);
 - the maths helpers (`src/utils/math.js`).
 

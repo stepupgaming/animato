@@ -1378,6 +1378,310 @@ impl crate::aim::ZoneAimReach for GlacialCrownParams {
 }
 
 
+/// Hard ceiling on pyre blades (matches `MAX_SPIKES` in `PyreAbility.js`).
+pub const MAX_PYRE_SPIKES: usize = 320;
+
+/// Procedural parameters for the Pyre Crown far-cast (Ext).
+///
+/// Mirrors the `pyre` block of LinearAbilityExtThreeJS `settings.js`. Only
+/// CPU-resolved dimensions are carried — colours / particle rates /
+/// material-shader tuning stay GLSL downstream. Metres that scale under
+/// `zone_radius` are stored as **unit fractions** and multiplied by the live
+/// footprint at sample time, so editing `zone_radius` on a standing crown
+/// reshapes it with the clock stopped.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PyreCrownParams {
+    // ── the cast ──
+    /// Maximum cast distance, metres.
+    pub range: f32,
+    /// Casts nearer than this are refused (`0` = plant underfoot is legal).
+    pub min_range: f32,
+    /// Footprint the circle indicator measures out, metres.
+    pub zone_radius: f32,
+    /// How fast the fire line races to the point, metres/second.
+    pub speed: f32,
+    /// Seconds the crater takes to burn out to the boundary.
+    pub snap_time: f32,
+    /// Seconds the crown burns (impact phase).
+    pub lifetime: f32,
+    /// Seconds after `lifetime` before burn-out starts.
+    pub burn_delay: f32,
+    /// Seconds the burn-out takes to sweep back around the ring.
+    pub burn_sweep: f32,
+    /// Seconds of random delay between neighbours during burn-out.
+    pub burn_stagger: f32,
+    /// Seconds one blade takes to burn down to ash.
+    pub ash_time: f32,
+    /// Seconds before the ability can be armed again.
+    pub cooldown: f32,
+    /// Global speed multiplier (`settings.global.speed`).
+    pub speed_scale: f32,
+    /// Global randomness multiplier (`settings.global.randomness`).
+    pub randomness: f32,
+
+    // ── hand origin ──
+    /// Metres above the floor at the hand.
+    pub hand_height: f32,
+    /// Metres in front of the caster.
+    pub hand_forward: f32,
+    /// Metres to the side (+ follows the cast `side`).
+    pub hand_side: f32,
+
+    // ── footprint fill ──
+    /// Instances spent on one cast (capped at [`MAX_PYRE_SPIKES`]).
+    pub spike_count: f32,
+    /// Multiplier on that count.
+    pub density: f32,
+    /// Fraction spent on the wall at the boundary.
+    pub ring_share: f32,
+    /// Fraction on the pyre in the middle (`0` = middle stays open).
+    pub core_share: f32,
+    /// Fraction of skirt held back for the blaze.
+    pub late_share: f32,
+    /// Where the wall stands, × `zone_radius`.
+    pub ring_seat: f32,
+    /// Radial jitter of the wall, × `zone_radius`.
+    pub ring_scatter: f32,
+    /// Inner lip of the wreckage bank, × `zone_radius`.
+    pub skirt_seat: f32,
+    /// How wide that band is, × `zone_radius`.
+    pub skirt_band: f32,
+    /// `<1` pushes the skirt outward, `>1` crowds it inward.
+    pub skirt_bias: f32,
+    /// Radius of the cluster in the middle, × `zone_radius`.
+    pub core_spread: f32,
+
+    // ── silhouette ──
+    /// Length of a blade on the wall, metres.
+    pub ring_height: f32,
+    /// How uneven the crest of that wall is, `0..1`.
+    pub ring_wave: f32,
+    /// Length of a shard in the skirt, metres.
+    pub skirt_height: f32,
+    /// Length of the pyre, metres.
+    pub core_height: f32,
+    /// Height jitter strength.
+    pub height_jitter: f32,
+    /// Radians the wall leans (negative tips inward).
+    pub ring_lean: f32,
+    /// Radians the skirt leans.
+    pub skirt_lean: f32,
+    /// Radians the pyre leans.
+    pub core_lean: f32,
+    /// Lean jitter strength.
+    pub lean_jitter: f32,
+    /// Radians a blade is splayed off its own radius, ±.
+    pub fan: f32,
+    /// Random yaw, `0..1` of a full turn.
+    pub twist: f32,
+    /// Fraction of the skirt demoted to ankle-height wreckage.
+    pub rubble: f32,
+    /// Height scale for rubble shards.
+    pub rubble_scale: f32,
+
+    // ── blade ──
+    /// Base radius, metres.
+    pub blade_radius: f32,
+    /// Radius jitter strength.
+    pub radius_jitter: f32,
+    /// Mid-height radius multiplier (`1` = cone).
+    pub belly: f32,
+    /// Where the blade is widest, `0..1` up the blade.
+    pub belly_at: f32,
+    /// Tip radius as a fraction of the base.
+    pub taper: f32,
+    /// Sides of the prism.
+    pub facets: f32,
+    /// How far the facets are pushed off a clean prism.
+    pub roughness: f32,
+    /// Sideways curve from base to tip.
+    pub bend: f32,
+
+    // ── eruption timing (monotonic — no overshoot) ──
+    /// Seconds from buried to full height.
+    pub rise_time: f32,
+    /// `0` = heavy shove, `1` = snap (`outCubic` → `outExpo` blend).
+    pub rise_snap: f32,
+    /// How much further it reaches forever, × its own height.
+    pub creep: f32,
+    /// Seconds that reach takes to (nearly) finish.
+    pub creep_time: f32,
+    /// Seconds the wave takes to run around the ring.
+    pub sweep_time: f32,
+    /// Seconds before the skirt starts.
+    pub skirt_delay: f32,
+    /// How long the skirt takes to cross the band.
+    pub skirt_wave: f32,
+    /// Seconds before the pyre comes up.
+    pub core_delay: f32,
+    /// Seconds of random delay on top of all of it.
+    pub stagger: f32,
+    /// Fraction of the blaze the late blades are scattered over.
+    pub bloom_spread: f32,
+    /// How far a dying blade settles into the floor, × its height.
+    pub sink: f32,
+    /// Seconds the birth flash lasts.
+    pub birth_fade: f32,
+
+    // ── crater + flame veil + haze ──
+    /// Thickness of the band at the edge, metres.
+    pub field_boundary: f32,
+    /// Hover distance above the floor, metres.
+    pub field_height: f32,
+    /// Master opacity of the flame wall, `0` hides it.
+    pub veil: f32,
+    /// How high the wall stands, metres.
+    pub veil_height: f32,
+    /// Where it stands, × `zone_radius`.
+    pub veil_radius: f32,
+    /// Revolutions/second the whole wall turns.
+    pub veil_spin: f32,
+    /// Master haze strength (`0` ships off).
+    pub haze: f32,
+    /// How far up the shimmer reaches, metres.
+    pub haze_height: f32,
+    /// Where haze stands, × `zone_radius`.
+    pub haze_radius: f32,
+
+    // ── dynamic light ──
+    /// Base intensity of the cast light.
+    pub light_intensity: f32,
+    /// Radius of the cast light, metres.
+    pub light_radius: f32,
+    /// How far up the crown the light sits, `0..1`.
+    pub light_height: f32,
+}
+
+impl Default for PyreCrownParams {
+    fn default() -> Self {
+        Self {
+            range: 18.0,
+            min_range: 0.0,
+            zone_radius: 4.2,
+            speed: 46.0,
+            snap_time: 0.2,
+            lifetime: 4.0,
+            burn_delay: 0.45,
+            burn_sweep: 0.5,
+            burn_stagger: 0.4,
+            ash_time: 1.1,
+            cooldown: 1.6,
+            speed_scale: 1.0,
+            randomness: 1.0,
+
+            hand_height: 1.22,
+            hand_forward: 0.6,
+            hand_side: 0.18,
+
+            spike_count: 159.0,
+            density: 0.65,
+            ring_share: 0.66,
+            core_share: 0.0,
+            late_share: 0.14,
+            ring_seat: 0.93,
+            ring_scatter: 0.2,
+            skirt_seat: 0.7,
+            skirt_band: 0.46,
+            skirt_bias: 0.9,
+            core_spread: 0.16,
+
+            ring_height: 1.5,
+            ring_wave: 0.33,
+            skirt_height: 1.35,
+            core_height: 6.05,
+            height_jitter: 0.98,
+            ring_lean: -0.46,
+            skirt_lean: 0.34,
+            core_lean: 0.16,
+            lean_jitter: 1.35,
+            fan: 1.25,
+            twist: 1.0,
+            rubble: 0.52,
+            rubble_scale: 0.24,
+
+            blade_radius: 0.45,
+            radius_jitter: 0.58,
+            belly: 1.67,
+            belly_at: 0.34,
+            taper: 0.12,
+            facets: 10.0,
+            roughness: 0.68,
+            bend: 1.5,
+
+            rise_time: 0.18,
+            rise_snap: 0.65,
+            creep: 0.06,
+            creep_time: 1.4,
+            sweep_time: 0.38,
+            skirt_delay: 0.09,
+            skirt_wave: 0.24,
+            core_delay: 0.18,
+            stagger: 0.06,
+            bloom_spread: 0.7,
+            sink: 0.3,
+            birth_fade: 0.45,
+
+            field_boundary: 0.56,
+            field_height: 0.03,
+            veil: 0.84,
+            veil_height: 1.5,
+            veil_radius: 0.99,
+            veil_spin: 0.125,
+            haze: 0.0,
+            haze_height: 3.4,
+            haze_radius: 1.3,
+
+            light_intensity: 4.0,
+            light_radius: 17.0,
+            light_height: 0.45,
+        }
+    }
+}
+
+impl PyreCrownParams {
+    /// Live footprint, metres (`max(0.05, zone_radius)`).
+    pub fn radius(&self) -> f32 {
+        self.zone_radius.max(0.05)
+    }
+
+    /// Blade budget: `clamp(round(spike_count * density), 1, MAX_PYRE_SPIKES)`.
+    pub fn spike_budget(&self) -> usize {
+        libm::roundf(self.spike_count * self.density)
+            .clamp(1.0, MAX_PYRE_SPIKES as f32) as usize
+    }
+
+    /// Seconds the crater takes to burn out (`max(0.02, snap_time)`).
+    pub fn snap_duration(&self) -> f32 {
+        self.snap_time.max(0.02)
+    }
+
+    /// Seconds the crown burns (`max(0.2, lifetime)`).
+    pub fn impact_duration(&self) -> f32 {
+        self.lifetime.max(0.2)
+    }
+
+    /// Burn-out duration: delay + sweep + stagger + ash (`max(0.2, …)`).
+    pub fn fade_duration(&self) -> f32 {
+        (self.burn_delay + self.burn_sweep + self.burn_stagger + self.ash_time).max(0.2)
+    }
+}
+
+impl crate::aim::AimReach for PyreCrownParams {
+    fn cast_range(&self) -> f32 {
+        self.range
+    }
+
+    fn cast_min_range(&self) -> f32 {
+        self.min_range
+    }
+}
+
+impl crate::aim::ZoneAimReach for PyreCrownParams {
+    fn zone_radius(&self) -> f32 {
+        self.zone_radius
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -1639,6 +1943,59 @@ mod tests {
             shatter_stagger: 0.0,
             sink_time: 0.0,
             ..GlacialCrownParams::default()
+        };
+        assert_eq!(flat.snap_duration(), 0.02);
+        assert_eq!(flat.impact_duration(), 0.2);
+        assert_eq!(flat.fade_duration(), 0.2);
+    }
+
+    #[test]
+    fn pyre_defaults_match_shipped_settings() {
+        let p = PyreCrownParams::default();
+        assert_eq!(p.range, 18.0);
+        assert_eq!(p.min_range, 0.0);
+        assert_eq!(p.zone_radius, 4.2);
+        assert_eq!(p.speed, 46.0);
+        assert_eq!(p.snap_time, 0.2);
+        assert_eq!(p.lifetime, 4.0);
+        assert_eq!(p.burn_delay, 0.45);
+        assert_eq!(p.burn_sweep, 0.5);
+        assert_eq!(p.burn_stagger, 0.4);
+        assert_eq!(p.ash_time, 1.1);
+        assert_eq!(p.spike_count, 159.0);
+        assert_eq!(p.density, 0.65);
+        assert_eq!(p.ring_share, 0.66);
+        assert_eq!(p.core_share, 0.0);
+        assert_eq!(p.ring_height, 1.5);
+        assert_eq!(p.ring_lean, -0.46);
+        assert_eq!(p.rise_snap, 0.65);
+        assert_eq!(p.creep, 0.06);
+        assert_eq!(p.veil, 0.84);
+        assert_eq!(p.haze, 0.0);
+        assert_eq!(p.light_intensity, 4.0);
+        assert_eq!(p.spike_budget(), 103);
+    }
+
+    #[test]
+    fn pyre_budgets_and_floors() {
+        let mut p = PyreCrownParams::default();
+        p.spike_count = 10_000.0;
+        assert_eq!(p.spike_budget(), MAX_PYRE_SPIKES);
+        p.spike_count = 0.0;
+        p.density = 1.0;
+        assert_eq!(p.spike_budget(), 1);
+        assert!((p.snap_duration() - 0.2).abs() < f32::EPSILON);
+        let p = PyreCrownParams::default();
+        assert!((p.impact_duration() - 4.0).abs() < f32::EPSILON);
+        assert!((p.fade_duration() - 2.45).abs() < f32::EPSILON);
+        let flat = PyreCrownParams {
+            snap_time: 0.0,
+            lifetime: 0.0,
+            burn_delay: 0.0,
+            burn_sweep: 0.0,
+            burn_stagger: 0.0,
+            ash_time: 0.0,
+            ..PyreCrownParams::default()
         };
         assert_eq!(flat.snap_duration(), 0.02);
         assert_eq!(flat.impact_duration(), 0.2);

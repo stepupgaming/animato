@@ -79,8 +79,10 @@ traits: it must land as an optional edge crate with unchanged defaults.
    `GlacialCrownParams` / `crown.rs` — GlacierAbility ZONE port with
    freeze-front travel, ring/skirt/core bloom and veil/sheet samples),
    completing the LinearAbilityCastingThreeJS ability set. Ext /
-   Extended sandboxes and a full `wgpu` renderer backend (particles, decals,
-   ice/lightning/meteor/beam/snare/glacier shading) are not started here.
+   Extended sandbox ports (starting with Pyre Crown) stay additive in this
+   same optional crate — see ADR 0004. A full `wgpu` renderer backend
+   (particles, decals, ice/lightning/meteor/beam/snare/glacier/pyre shading)
+   is not started here.
 
 ## Consequences
 

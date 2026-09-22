@@ -15,20 +15,22 @@
 //!   zone trap with leash travel + lightning cage (SnareAbility port).
 //! - [`GlacialCrown`] / [`GlacialCrownParams`] — Glacial Crown (X) far-cast
 //!   ice ring / skirt crown (GlacierAbility ZONE port).
+//! - [`PyreCrown`] / [`PyreCrownParams`] — Pyre Crown (Q) far-cast fire ring /
+//!   skirt crown (Ext `PyreAbility` ZONE port).
 //! - Time-driven: `seek_abs` re-simulates deterministically, so every pipeline
 //!   is drivable by `animato_composition::Composition` and
 //!   `animato_timeline::Timeline::seek_abs` — including while paused, with
 //!   params edited live (records store dice only; metres resolve at sample
 //!   time).
-//! - All six implement [`animato_core::Playable`] (`Send + 'static`).
+//! - All seven implement [`animato_core::Playable`] (`Send + 'static`).
 //!
 //! ## Quick Start
 //!
 //! ```rust
 //! use animato_fx_elemental::{
 //!     CinderFall, CinderFallParams, FrostLance, FrostLanceParams, GlacialCrown,
-//!     GlacialCrownParams, NovaBeam, NovaBeamParams, StormLance, StormLanceParams,
-//!     VoltaicSnare, VoltaicSnareParams,
+//!     GlacialCrownParams, NovaBeam, NovaBeamParams, PyreCrown, PyreCrownParams,
+//!     StormLance, StormLanceParams, VoltaicSnare, VoltaicSnareParams,
 //! };
 //!
 //! let mut frost = FrostLance::with_params(FrostLanceParams::default());
@@ -60,11 +62,17 @@
 //! crown.cast([0.0, 0.0], [0.0, 1.0], 12.0, 7).unwrap();
 //! crown.seek_abs(0.6);
 //! assert!(!crown.samples().is_empty());
+//!
+//! let mut pyre = PyreCrown::with_params(PyreCrownParams::default());
+//! pyre.cast([0.0, 0.0], [0.0, 1.0], 12.0, 7).unwrap();
+//! pyre.seek_abs(0.6);
+//! assert!(!pyre.samples().is_empty());
 //! ```
 //!
 //! ## Attribution
 //!
 //! Ported from [LinearAbiltyCastingThreeJS](https://github.com/achrefelouafi/LinearAbiltyCastingThreeJS)
+//! and [LinearAbilityExtThreeJS](https://github.com/achrefelouafi/LinearAbilityExtThreeJS)
 //! by achrefelouafi (MIT). See `ATTRIBUTION.md` and the crate README for the
 //! module mapping. No textures, meshes or HDR assets were taken — only the
 //! pipeline structure, timing curves and parameter defaults, re-expressed in
@@ -74,8 +82,8 @@
 //!
 //! Frost Lance, Storm Lance, Cinder Fall, Nova Beam, Voltaic Snare and
 //! Glacial Crown are in-crate (ZONE casts via [`solve_zone_aim`]) — completing
-//! the LinearAbilityCastingThreeJS ability set. Ext / Extended sandboxes
-//! remain follow-ups (see README).
+//! the LinearAbilityCastingThreeJS ability set. Ext ports (Pyre Crown and
+//! later) stay additive in this same optional crate (ADR 0004); see README.
 //!
 //! The optional `wgpu` feature (`gpu.rs`) is an instance-layout stub only,
 //! not a renderer: the default build stays GPU-free. See the crate README
@@ -102,6 +110,8 @@ pub mod cage;
 pub mod voltaic;
 pub mod crown;
 pub mod glacial;
+pub mod pyre;
+pub mod pyrecrown;
 
 #[cfg(feature = "wgpu")]
 pub mod gpu;
@@ -114,9 +124,9 @@ pub use filament::{StrandNode, StrandRecord, StrandSample, roll_strands};
 pub use params::{
     CAGE_NODES, CinderFallParams, FISSURE_STEP, FrostLanceParams, GlacialCrownParams,
     IMPACT_FRACTION, MAX_CHUNKS, MAX_COILS, MAX_COLUMN, MAX_CROWN_SPIKES,
-    MAX_FISSURE_ARMS, MAX_FISSURE_BRANCHES, MAX_LEASH, MAX_RIM, MAX_RINGS, MAX_SPIKES,
-    MAX_STRANDS, MAX_TENDRIL, NovaBeamParams, STRAND_NODES, StormLanceParams,
-    TUBE_SEGMENTS, VoltaicSnareParams,
+    MAX_FISSURE_ARMS, MAX_FISSURE_BRANCHES, MAX_LEASH, MAX_PYRE_SPIKES, MAX_RIM,
+    MAX_RINGS, MAX_SPIKES, MAX_STRANDS, MAX_TENDRIL, NovaBeamParams, PyreCrownParams,
+    STRAND_NODES, StormLanceParams, TUBE_SEGMENTS, VoltaicSnareParams,
 };
 pub use pipeline::{FrostEvent, FrostLance, FrostLight, Phase, SpawnError, SEEK_STEP};
 pub use rng::FxRng;
@@ -145,3 +155,11 @@ pub use crown::{
     shard_height, shard_lean, shard_position, shard_radius,
 };
 pub use glacial::{GlacialCrown, GlacialEvent, GlacialLight};
+pub use pyre::{
+    BladeRole, EmberFieldSample, FlameVeilSample, HeatHazeSample, PyreRecord,
+    PyreSample, blade_fan, blade_height, blade_lean, blade_position, blade_radius,
+    char_amount, ignition, pyre_angle_delta, pyre_birth_flash, pyre_emergence,
+    roll_pyre, sample_blade, sample_ember_field, sample_flame_veil, sample_heat_haze,
+    sample_pyre, schedule_pyre_eruption,
+};
+pub use pyrecrown::{PyreCrown, PyreEvent, PyreLight};
