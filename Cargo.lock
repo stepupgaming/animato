@@ -62,16 +62,19 @@ version = "1.7.2"
 dependencies = [
  "animato-bevy",
  "animato-color",
+ "animato-composition",
  "animato-core",
  "animato-devtools",
  "animato-dioxus",
  "animato-driver",
+ "animato-fx-elemental",
  "animato-gpu",
  "animato-js",
  "animato-leptos",
  "animato-macro",
  "animato-path",
  "animato-physics",
+ "animato-procgen",
  "animato-spring",
  "animato-timeline",
  "animato-tween",
@@ -110,6 +113,15 @@ dependencies = [
  "animato-core",
  "palette",
  "serde",
+]
+
+[[package]]
+name = "animato-composition"
+version = "1.7.2"
+dependencies = [
+ "animato-core",
+ "animato-timeline",
+ "animato-tween",
 ]
 
 [[package]]
@@ -159,6 +171,16 @@ version = "1.7.2"
 dependencies = [
  "animato-core",
  "animato-tween",
+]
+
+[[package]]
+name = "animato-fx-elemental"
+version = "1.7.2"
+dependencies = [
+ "animato-composition",
+ "animato-core",
+ "libm",
+ "wgpu",
 ]
 
 [[package]]
@@ -240,6 +262,15 @@ dependencies = [
 
 [[package]]
 name = "animato-physics"
+version = "1.7.2"
+dependencies = [
+ "animato-core",
+ "libm",
+ "serde",
+]
+
+[[package]]
+name = "animato-procgen"
 version = "1.7.2"
 dependencies = [
  "animato-core",

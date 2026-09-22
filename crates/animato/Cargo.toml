@@ -46,6 +46,10 @@ devtools-web-panel = ["devtools", "animato-devtools/web-panel"]
 devtools-egui-panel = ["devtools", "animato-devtools/egui-panel"]
 devtools-tui-panel = ["devtools", "animato-devtools/tui-panel"]
 macro = ["dep:animato-macro"]
+composition = ["dep:animato-composition"]
+procgen = ["dep:animato-procgen"]
+fx-elemental = ["dep:animato-fx-elemental"]
+elemental = ["fx-elemental"]
 tokio    = ["timeline", "animato-timeline/tokio"]
 serde    = [
     "dep:serde",
@@ -76,6 +80,9 @@ animato-yew      = { workspace = true, optional = true }
 animato-js       = { workspace = true, optional = true }
 animato-devtools = { workspace = true, optional = true }
 animato-macro    = { workspace = true, optional = true }
+animato-composition = { workspace = true, optional = true }
+animato-procgen = { workspace = true, optional = true }
+animato-fx-elemental = { workspace = true, optional = true }
 palette          = { workspace = true, optional = true }
 serde            = { workspace = true, optional = true }
 
@@ -99,6 +106,7 @@ animato-yew    = { workspace = true }
 animato-js     = { workspace = true }
 animato-devtools = { workspace = true }
 animato-macro = { workspace = true }
+animato-composition = { workspace = true }
 bevy_app       = { workspace = true }
 bevy_ecs       = { workspace = true }
 bevy_time      = { workspace = true }

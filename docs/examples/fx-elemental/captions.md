@@ -1,0 +1,17 @@
+`frost_lance.mp4` — Cinematic 1280×720 card demo: Frost Lance (Q) line-cast from aim lock, fracture front racing down the 12 m line, spike field erupting behind it (dense at the caster, wall of blades + impact cluster at the far end), impact punch with shockwave rings, then withdrawal into the floor. Every transform is sampled from the real `animato-fx-elemental` Rust pipeline via `frost_lance_frames.json`.
+`frost_lance.gif` — 640px embeddable preview of the same clip for issue #1.
+`storm_lance.mp4` — Cinematic 1280×720 card demo: Storm Lance (E) bolt from aim lock, strike front racing down the 12 m line, filament bundle cracking behind it with restrike, impact hold + electric flash, then cubic blow-out. Every polyline is sampled from the real `animato-fx-elemental` Rust pipeline via `storm_lance_frames.json`.
+`storm_lance.gif` — 640px embeddable preview of the Storm Lance clip for issue #1 / PR #2.
+`cinder_fall.mp4` — Cinematic 1280×720 card demo: Cinder Fall (R) arced meteor from aim lock, ballistic lob down the 12 m line with charge heat, impact detonation with molten fissures racing outward + debris spray, then crater fade. Every transform is sampled from the real `animato-fx-elemental` Rust pipeline via `cinder_fall_frames.json`.
+`cinder_fall.gif` — 640px embeddable preview of the Cinder Fall clip for issue #1 / PR #2.
+`nova_beam.mp4` — Cinematic 1280×720 card demo: Nova Beam (F) from aim lock, charge orb winding up in the hands, leading edge racing the 12 m line as a parametric tube with shock discs, sustain burn at impact, then width-collapse fade. Every transform is sampled from the real `animato-fx-elemental` Rust pipeline via `nova_beam_frames.json`.
+`nova_beam.gif` — 640px embeddable preview of the Nova Beam clip for issue #1 / PR #2.
+`voltaic_snare.mp4` — Cinematic 1280×720 top-down card demo: Voltaic Snare (V) zone cast from aim lock, leash whipping out to the planted circle, cage slam with column / tendrils / rim arcs holding the disc under `zone_radius`, then collapse. Every polyline is sampled from the real `animato-fx-elemental` Rust pipeline via `voltaic_snare_frames.json`.
+`voltaic_snare.gif` — 640px embeddable preview of the Voltaic Snare clip for issue #1 / PR #2.
+`glacial_crown.mp4` — Cinematic 1280×720 top-down card demo: Glacial Crown (X) zone cast from aim lock, freeze front racing to the planted circle, ring-of-blades bloom with skirt banking under `zone_radius`, then shatter/thaw. Every shard transform is sampled from the real `animato-fx-elemental` Rust pipeline via `glacial_crown_frames.json`.
+`glacial_crown.gif` — 640px embeddable preview of the Glacial Crown clip for issue #1 / PR #2.
+
+`pyre_crown.mp4` — Cinematic 1280×720 top-down card demo: Pyre Crown (Q, Ext) zone cast from aim lock, fire front racing to the planted circle, ring-of-flame bloom with skirt banking under `zone_radius`, then burn-out/ash. Every blade transform is sampled from the real `animato-fx-elemental` Rust pipeline via `pyre_crown_frames.json`.
+`pyre_crown.gif` — 640px embeddable preview of the Pyre Crown clip for issue #1 / PR #2.
+`kraken_crown.mp4` — Cinematic 1280×720 top-down card demo: Kraken Crown (E, Ext) zone cast from aim lock, wet surge racing to the planted circle, abyss rift tear with tentacles hauling out and hammering the middle under `zone_radius`, then withdrawal. Every tentacle transform is sampled from the real `animato-fx-elemental` Rust pipeline via `kraken_crown_frames.json`.
+`kraken_crown.gif` — 640px embeddable preview of the Kraken Crown clip for issue #1 / PR #2.

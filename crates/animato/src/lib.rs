@@ -95,6 +95,9 @@
 //! | `js` | WASM-to-NPM JavaScript bindings |
 //! | `devtools` | Timeline inspector, easing editor, spring visualizer, recorder controls, perf monitor |
 //! | `macro` | Declarative `animato!{}` Motion Macro DSL |
+//! | `composition` | [`Composition`], [`Track`], [`Clip`] seekable track/clip composition |
+//! | `procgen` | Procedural-geometry edge crate: Delaunay, Voronoi, Lloyd, Poisson-disk, Worley, starter caustics |
+//! | `fx-elemental` (`elemental` alias) | Elemental-VFX edge crate: seekable Frost Lance + Storm Lance + Cinder Fall + Nova Beam + Voltaic Snare + Glacial Crown + Ext Pyre Crown + Ext Kraken Crown pipelines |
 //! | `tokio` | [`Timeline::wait()`] async completion waiting |
 //! | `serde` | `Serialize`/`Deserialize` on all public types |
 
@@ -248,6 +251,54 @@ pub use animato_devtools::DevToolsTuiPanel;
 #[cfg(feature = "macro")]
 pub use animato_macro::{animato, keyframes, motion, preset, spring, timeline, tween};
 
+// ── Composition (optional edge crate; defaults unchanged) ────────────────────
+#[cfg(feature = "composition")]
+pub use animato_composition::{Clip, Composition, Track};
+
+// ── Procgen (optional edge crate; defaults unchanged) ────────────────────────
+#[cfg(feature = "procgen")]
+pub use animato_procgen::{
+    Bounds, CausticField, Point as ProcgenPoint, SmallRng, VoronoiCell, WorleyField,
+    lloyd_relax, poisson_disk, polygon_area, polygon_centroid, signed_area2, triangulate,
+    voronoi,
+};
+
+// ── Elemental FX (optional edge crate; defaults unchanged) ───────────────────
+#[cfg(any(feature = "fx-elemental", feature = "elemental"))]
+pub use animato_fx_elemental::{
+    AbyssFieldSample, AimReach, AimSolution, BladeRole, BrineVeilSample, CAGE_NODES,
+    CageContext, CageNode, CageRecord, CageSample, CinderEvent, CinderFall,
+    CinderFallParams, CinderLight, ChunkRecord, ChunkSample, CrownRecord, CrownSample,
+    EmberFieldSample, FISSURE_STEP, FieldSample, FilamentRole, FissureArmRecord,
+    FissureBranchRecord, FissureNode, FissureSample, FlameVeilSample, FrostEvent,
+    FrostLance, FrostLanceParams, FrostLight, FxRng, GlacialCrown, GlacialCrownParams,
+    GlacialEvent, GlacialLight, HeatHazeSample, IMPACT_FRACTION, KrakenCrown,
+    KrakenCrownParams, KrakenEvent, KrakenLight, KrakenPose, KrakenRecord, KrakenSample,
+    MAX_CHUNKS, MAX_COILS, MAX_COLUMN, MAX_CROWN_SPIKES, MAX_FISSURE_ARMS,
+    MAX_FISSURE_BRANCHES, MAX_KRAKEN_ARMS, MAX_LEASH, MAX_PYRE_SPIKES, MAX_RIM,
+    MAX_RINGS, MAX_SPIKES, MAX_STRANDS, MAX_TENDRIL, NovaBeam, NovaBeamParams,
+    NovaEvent, NovaLight, OrbSample, Phase as FrostPhase, PyreCrown, PyreCrownParams,
+    PyreEvent, PyreLight, PyreRecord, PyreSample, RingRecord, RingSample, RockSample,
+    SEEK_STEP, STRAND_NODES, ShardRole, SpawnError as FrostSpawnError, SpikeRecord,
+    SpikeSample, StormEvent, StormLance, StormLanceParams, StormLight, StrandNode,
+    StrandRecord, StrandSample, StrikeSchedule, TUBE_SEGMENTS, TentacleRole, TubeNode,
+    VeilSample, VoltaicEvent, VoltaicLight, VoltaicSnare, VoltaicSnareParams,
+    ZoneAimReach, ZoneAimSolution, angle_delta, arc_point, arm_delay, arm_length,
+    arm_thickness, beam_axis_point, beam_radius, bend_bearing, birth_flash, blade_fan,
+    blade_height, blade_lean, blade_position, blade_radius, char_amount, climb_amount,
+    cycle_fit, cycle_period, emergence, growth, heading_at, ignition, kraken_angle_delta,
+    open_amount, pyre_angle_delta, pyre_birth_flash, pyre_emergence, roll_cage,
+    roll_chunks, roll_crown, roll_fissures, roll_kraken, roll_pyre, roll_rings,
+    roll_spikes, roll_strands, sample_abyss_field, sample_blade, sample_brine_veil,
+    sample_cage, sample_chunk, sample_crown, sample_ember_field, sample_field,
+    sample_filament, sample_fissures, sample_flame_veil, sample_heat_haze, sample_kraken,
+    sample_pyre, sample_ring, sample_shard, sample_tentacle, sample_veil,
+    schedule_eruption, schedule_pyre_eruption, seat_radius, shatter_amount, shard_fan,
+    shard_height, shard_lean, shard_position, shard_radius, solve_aim, solve_pose,
+    solve_zone_aim, solve_zone_aim_at, strike_point, strike_schedule, strike_turn,
+    tick_arm_events,
+};
+
 /// Prelude module with macro-friendly re-exports.
 ///
 /// Import everything for ergonomic macro usage:
@@ -263,11 +314,6 @@ pub use animato_macro::{animato, keyframes, motion, preset, spring, timeline, tw
 /// };
 /// ```
 pub mod prelude {
-    pub use crate::{
-        Angle, Animatable, AnimationIntrospection, AnimationKind, Color, Easing, Inspectable,
-        Interpolate, Mat4, Playable, PlaybackState, Quaternion, Update,
-    };
-
     #[cfg(feature = "tween")]
     pub use crate::{
         GridOrigin, Keyframe, KeyframeTrack, Loop, StaggerPattern, Tween, TweenBuilder, TweenState,
@@ -304,4 +350,48 @@ pub mod prelude {
 
     #[cfg(feature = "macro")]
     pub use crate::{animato, keyframes, motion, preset, spring, timeline, tween};
+
+    #[cfg(feature = "composition")]
+    pub use crate::{Clip, Composition, Track};
+
+    #[cfg(feature = "procgen")]
+    pub use crate::{
+        Bounds, CausticField, ProcgenPoint, SmallRng, VoronoiCell, WorleyField, lloyd_relax,
+        poisson_disk, polygon_area, polygon_centroid, signed_area2, triangulate, voronoi,
+    };
+
+    #[cfg(any(feature = "fx-elemental", feature = "elemental"))]
+    pub use crate::{
+        AbyssFieldSample, AimReach, AimSolution, BladeRole, BrineVeilSample, CAGE_NODES,
+        CageContext, CageNode, CageRecord, CageSample, CinderEvent, CinderFall,
+        CinderFallParams, CinderLight, ChunkRecord, ChunkSample, CrownRecord, CrownSample,
+        EmberFieldSample, FISSURE_STEP, FieldSample, FilamentRole, FissureArmRecord,
+        FissureBranchRecord, FissureNode, FissureSample, FlameVeilSample, FrostEvent,
+        FrostLance, FrostLanceParams, FrostLight, FrostPhase, FrostSpawnError, FxRng,
+        GlacialCrown, GlacialCrownParams, GlacialEvent, GlacialLight, HeatHazeSample,
+        IMPACT_FRACTION, KrakenCrown, KrakenCrownParams, KrakenEvent, KrakenLight,
+        KrakenPose, KrakenRecord, KrakenSample, MAX_CHUNKS, MAX_COILS, MAX_COLUMN,
+        MAX_CROWN_SPIKES, MAX_FISSURE_ARMS, MAX_FISSURE_BRANCHES, MAX_KRAKEN_ARMS,
+        MAX_LEASH, MAX_PYRE_SPIKES, MAX_RIM, MAX_RINGS, MAX_SPIKES, MAX_STRANDS,
+        MAX_TENDRIL, NovaBeam, NovaBeamParams, NovaEvent, NovaLight, OrbSample, PyreCrown,
+        PyreCrownParams, PyreEvent, PyreLight, PyreRecord, PyreSample, RingRecord,
+        RingSample, RockSample, SEEK_STEP, STRAND_NODES, ShardRole, SpikeRecord,
+        SpikeSample, StormEvent, StormLance, StormLanceParams, StormLight, StrandNode,
+        StrandRecord, StrandSample, StrikeSchedule, TUBE_SEGMENTS, TentacleRole, TubeNode,
+        VeilSample, VoltaicEvent, VoltaicLight, VoltaicSnare, VoltaicSnareParams,
+        ZoneAimReach, ZoneAimSolution, angle_delta, arc_point, arm_delay, arm_length,
+        arm_thickness, beam_axis_point, beam_radius, bend_bearing, birth_flash, blade_fan,
+        blade_height, blade_lean, blade_position, blade_radius, char_amount, climb_amount,
+        cycle_fit, cycle_period, emergence, growth, heading_at, ignition,
+        kraken_angle_delta, open_amount, pyre_angle_delta, pyre_birth_flash,
+        pyre_emergence, roll_cage, roll_chunks, roll_crown, roll_fissures, roll_kraken,
+        roll_pyre, roll_rings, roll_spikes, roll_strands, sample_abyss_field,
+        sample_blade, sample_brine_veil, sample_cage, sample_chunk, sample_crown,
+        sample_ember_field, sample_field, sample_filament, sample_fissures,
+        sample_flame_veil, sample_heat_haze, sample_kraken, sample_pyre, sample_ring,
+        sample_shard, sample_tentacle, sample_veil, schedule_eruption,
+        schedule_pyre_eruption, seat_radius, shatter_amount, shard_fan, shard_height,
+        shard_lean, shard_position, shard_radius, solve_aim, solve_pose, solve_zone_aim,
+        solve_zone_aim_at, strike_point, strike_schedule, strike_turn, tick_arm_events,
+    };
 }
