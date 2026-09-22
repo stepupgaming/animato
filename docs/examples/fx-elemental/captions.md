@@ -11,3 +11,5 @@
 `glacial_crown.mp4` — Cinematic 1280×720 top-down card demo: Glacial Crown (X) zone cast from aim lock, freeze front racing to the planted circle, ring-of-blades bloom with skirt banking under `zone_radius`, then shatter/thaw. Every shard transform is sampled from the real `animato-fx-elemental` Rust pipeline via `glacial_crown_frames.json`.
 `glacial_crown.gif` — 640px embeddable preview of the Glacial Crown clip for issue #1 / PR #2.
 
+`pyre_crown.mp4` — Cinematic 1280×720 top-down card demo: Pyre Crown (Q, Ext) zone cast from aim lock, fire front racing to the planted circle, ring-of-flame bloom with skirt banking under `zone_radius`, then burn-out/ash. Every blade transform is sampled from the real `animato-fx-elemental` Rust pipeline via `pyre_crown_frames.json`.
+`pyre_crown.gif` — 640px embeddable preview of the Pyre Crown clip for issue #1 / PR #2.

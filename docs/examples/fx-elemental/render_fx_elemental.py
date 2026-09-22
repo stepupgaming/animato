@@ -2,12 +2,12 @@
 """Render cinematic 1280x720 Elemental Lab product-demo clips.
 
 Every transform comes from the REAL Rust pipeline dumps
-(``dump_frost_lance`` / ``dump_storm_lance`` / ``dump_cinder_fall`` / ``dump_nova_beam`` / ``dump_voltaic_snare`` / ``dump_glacial_crown``).
+(``dump_frost_lance`` / ``dump_storm_lance`` / ``dump_cinder_fall`` / ``dump_nova_beam`` / ``dump_voltaic_snare`` / ``dump_glacial_crown`` / ``dump_pyre_crown``).
 This script only handles presentation — dark glassy card UI, ice/cyan,
-storm/blue, cinder/ember, nova/cyan-gold, voltaic/violet or glacial/ice palette, ffmpeg H.264 + GIF for issue embeds.
+storm/blue, cinder/ember, nova/cyan-gold, voltaic/violet, glacial/ice or pyre/fire palette, ffmpeg H.264 + GIF for issue embeds.
 
 Usage:
-    python3 render_fx_elemental.py [--ability frost|storm|cinder|nova|snare|glacial|all] [--output DIR] [--regen]
+    python3 render_fx_elemental.py [--ability frost|storm|cinder|nova|snare|glacial|pyre|all] [--output DIR] [--regen]
 """
 
 from __future__ import annotations
@@ -1759,10 +1759,291 @@ def render_glacial(output: Path, dump_path: Path, regen: bool) -> None:
 
 
 
+
+# ── Pyre Crown (Q, Ext) — top-down fire crown/ring card ───────────────────────
+
+PYRE_SUBTITLES = {
+    "Travel": "fire front racing across the floor — planting the circle",
+    "Impact": "crown catch — ring of flame blades + skirt banking against it",
+    "Fade": "burn-out — tips to ash, crater cooling inward",
+    "Done": "pipeline complete — ready for the next cast",
+    "Idle": "zone aim locked — cast armed",
+}
+
+PYRE_CHIPS = {
+    "Travel": "TRAVEL — FIRE FRONT",
+    "Impact": "IMPACT — BLAZE",
+    "Fade": "FADE — BURN OUT",
+    "Done": "DONE",
+    "Idle": "ZONE — CAST ARMED",
+}
+
+FIRE_HOT = (255, 240, 189)
+FIRE_CORE = (255, 125, 26)
+FIRE_EDGE = (255, 106, 30)
+FIRE_SKIRT = (192, 24, 7)
+FIRE_ASH = (74, 64, 56)
+
+
+def load_pyre_dump(dump_path: Path, regen: bool) -> dict:
+    if regen or not dump_path.exists() or dump_path.stat().st_size == 0:
+        cargo = shutil.which("cargo")
+        if cargo is None:
+            raise RuntimeError("cargo is required to regenerate the frame dump")
+        print(f"regenerating {dump_path} via dump_pyre_crown example…")
+        subprocess.run(
+            [cargo, "run", "-q", "-p", "animato-fx-elemental",
+             "--example", "dump_pyre_crown", "--", str(dump_path)],
+            cwd=REPO_ROOT,
+            check=True,
+        )
+    with open(dump_path) as f:
+        return json.load(f)
+
+
+def pyre_phase_boundaries(frames: list[dict]) -> tuple[float, float, float]:
+    travel_end = fade_start = frames[-1]["t"]
+    for fr in frames:
+        if fr["phase"] == "Impact":
+            travel_end = fr["t"]
+            break
+    for fr in frames:
+        if fr["phase"] == "Fade":
+            fade_start = fr["t"]
+            break
+    return travel_end, fade_start, frames[-1]["t"]
+
+
+def pyre_world_to_screen(x: float, z: float, cx: float, cz: float) -> tuple[float, float]:
+    half = 8.5
+    px = PLOT_X + PLOT_W * 0.5 + (x - cx) * (PLOT_W * 0.5 / half)
+    py = PLOT_Y + PLOT_H * 0.5 - (z - cz) * (PLOT_H * 0.5 / half)
+    return (px, py)
+
+
+def pyre_base_scene(kicker, title, subtitle, chip, right_meta):
+    image = BACKGROUND.copy()
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((68, 48, 1212, 672), radius=22, fill=CARD, outline=(100, 40, 20, 230), width=2)
+    draw.line((96, 166, 1184, 166), fill=(100, 40, 20, 190), width=1)
+    draw.text((120, 78), kicker, font=FONT_KICKER, fill=(255, 154, 60))
+    draw.text((120, 101), title, font=FONT_TITLE, fill=(255, 236, 210))
+    draw.text((120, 140), subtitle, font=FONT_SUBTITLE, fill=MUTED)
+    chip_w = max(130, int(draw.textlength(chip, font=FONT_CHIP) + 48))
+    chip_x = 1160 - chip_w
+    draw.rounded_rectangle((chip_x, 91, 1160, 125), radius=17, fill=(40, 12, 6, 245), outline=(255, 106, 30, 220), width=1)
+    draw.ellipse((chip_x + 14, 103, chip_x + 21, 110), fill=FIRE_EDGE)
+    draw.text((chip_x + 31, 99), chip, font=FONT_CHIP, fill=(255, 200, 140))
+    draw.rounded_rectangle(
+        (PLOT_X - 1, PLOT_Y - 1, PLOT_X + PLOT_W + 1, PLOT_Y + PLOT_H + 1),
+        radius=12, fill=PLOT_BG, outline=(120, 50, 20, 255), width=2,
+    )
+    for x in range(PLOT_X + 40, PLOT_X + PLOT_W, 80):
+        draw.line((x, PLOT_Y + 2, x, PLOT_Y + PLOT_H - 2), fill=GRID, width=1)
+    for y in range(PLOT_Y + 40, PLOT_Y + PLOT_H, 56):
+        draw.line((PLOT_X + 2, y, PLOT_X + PLOT_W - 2, y), fill=GRID, width=1)
+    draw.text((PLOT_X + 22, PLOT_Y + 16), "LIVE PREVIEW  —  FROM RUST DUMP  —  TOP-DOWN", font=FONT_PLOT, fill=(210, 120, 60))
+    draw.text((PLOT_X + PLOT_W - 150, PLOT_Y + 16), right_meta, font=FONT_TINY, fill=(180, 100, 50))
+    draw.text((120, 625), "ANIMATO  /  ELEMENTAL LAB", font=FONT_META_BOLD, fill=(180, 100, 50))
+    draw.text((370, 625), "PYRE CROWN (Q, EXT)  —  SEEDED, SEEKABLE ZONE CAST", font=FONT_META, fill=(160, 90, 40))
+    return image
+
+
+def pyre_frame(frame: dict, dump: dict, bounds: tuple) -> Image.Image:
+    travel_end, fade_start, total = bounds
+    phase = frame["phase"]
+    t = frame["t"]
+    image = pyre_base_scene(
+        "EXT SANDBOX  /  PYRE CROWN (Q)",
+        "PYRE CROWN",
+        PYRE_SUBTITLES.get(phase, ""),
+        PYRE_CHIPS.get(phase, phase.upper()),
+        "SEED 7  /  SEEKABLE",
+    )
+    cx, cz = frame["center"]
+    zone_r = float(dump["zone_radius"])
+    fade = max(0.0, min(1.0, float(frame.get("fade", 1.0))))
+    open_amt = max(0.0, float(frame.get("open", 0.0)))
+    origin = dump.get("origin", [0.0, 0.0])
+
+    field = frame.get("field")
+    if field and open_amt > 0.02:
+        wash, wdraw = alpha_layer()
+        r_px = float(field["r"]) * float(field.get("burn", open_amt)) * (PLOT_W * 0.5 / 8.5)
+        c = pyre_world_to_screen(cx, cz, cx, cz)
+        alpha = int(70 * fade * min(1.0, float(field.get("fade", open_amt))))
+        wdraw.ellipse(
+            (c[0] - r_px, c[1] - r_px, c[0] + r_px, c[1] + r_px),
+            fill=(255, 67, 20, alpha),
+        )
+        band = max(4, int(0.56 * (PLOT_W * 0.5 / 8.5)))
+        wdraw.ellipse(
+            (c[0] - r_px, c[1] - r_px, c[0] + r_px, c[1] + r_px),
+            outline=(255, 189, 128, int(220 * fade * min(1.0, open_amt))),
+            width=band,
+        )
+        image.alpha_composite(wash.filter(ImageFilter.GaussianBlur(4)))
+
+    veil = frame.get("veil")
+    if veil and float(veil.get("opacity", 0)) > 0.01:
+        overlay, odraw = alpha_layer()
+        c = pyre_world_to_screen(cx, cz, cx, cz)
+        r_px = float(veil["r"]) * (PLOT_W * 0.5 / 8.5)
+        a = int(110 * fade * float(veil["opacity"]))
+        odraw.ellipse(
+            (c[0] - r_px, c[1] - r_px, c[0] + r_px, c[1] + r_px),
+            outline=(255, 159, 128, a),
+            width=4,
+        )
+        image.alpha_composite(overlay.filter(ImageFilter.GaussianBlur(2)))
+
+    if t < 0.35 and phase in ("Travel", "Idle"):
+        overlay, odraw = alpha_layer()
+        o = pyre_world_to_screen(origin[0], origin[1], cx, cz)
+        c = pyre_world_to_screen(cx, cz, cx, cz)
+        steps = 20
+        for i in range(steps):
+            if i % 2 == 0:
+                s0 = i / steps
+                s1 = min(1.0, (i + 0.55) / steps)
+                p0 = (o[0] + (c[0] - o[0]) * s0, o[1] + (c[1] - o[1]) * s0)
+                p1 = (o[0] + (c[0] - o[0]) * s1, o[1] + (c[1] - o[1]) * s1)
+                odraw.line((p0, p1), fill=(255, 154, 60, 200), width=2)
+        r_px = zone_r * (PLOT_W * 0.5 / 8.5)
+        odraw.ellipse(
+            (c[0] - r_px, c[1] - r_px, c[0] + r_px, c[1] + r_px),
+            outline=(255, 154, 60, 160),
+            width=2,
+        )
+        image.alpha_composite(overlay)
+
+    if phase == "Travel":
+        tip = frame.get("front_pos", [0.0, 0.0])
+        tp = pyre_world_to_screen(tip[0], tip[1], cx, cz)
+        glow, gdraw = alpha_layer()
+        gdraw.ellipse((tp[0] - 10, tp[1] - 10, tp[0] + 10, tp[1] + 10), fill=(255, 140, 40, 140))
+        image.alpha_composite(glow.filter(ImageFilter.GaussianBlur(4)))
+        ImageDraw.Draw(image).ellipse((tp[0] - 4, tp[1] - 4, tp[0] + 4, tp[1] + 4), fill=FIRE_HOT)
+
+    glow, gdraw = alpha_layer()
+    core, cdraw = alpha_layer()
+    for sh in frame.get("blades", []):
+        e = max(0.0, min(1.2, float(sh.get("e", 0.0))))
+        if e <= 0.0:
+            continue
+        birth = max(0.0, float(sh.get("b", 0.0)))
+        char = max(0.0, min(1.0, float(sh.get("c", 0.0))))
+        visibility = max(0.05, (1.0 - char * 0.9) * fade)
+        sx, sz = float(sh["x"]), float(sh["z"])
+        p = pyre_world_to_screen(sx, sz, cx, cz)
+        dx, dz = sx - cx, sz - cz
+        dist = math.hypot(dx, dz) or 1.0
+        ux, uz = dx / dist, dz / dist
+        lean = float(sh.get("lean", -0.3))
+        h = float(sh.get("h", 1.0)) * min(1.0, e)
+        # Inward lean (negative) still draws a visible radial segment.
+        reach = (h * abs(math.sin(lean)) + float(sh.get("r", 0.2))) * (PLOT_W * 0.5 / 8.5) * 1.2
+        tip = (p[0] + ux * reach * (1.0 if lean >= 0 else -0.35), p[1] - uz * reach * (1.0 if lean >= 0 else -0.35))
+        if lean < 0:
+            tip = (p[0] - ux * reach * 0.55, p[1] + uz * reach * 0.55)
+        role = sh.get("role", "Ring")
+        if role == "Ring":
+            color = FIRE_CORE if char < 0.5 else FIRE_ASH
+            width = max(1, min(4, int(float(sh.get("r", 0.3)) * 10)))
+            a = int(255 * visibility)
+        elif role == "Skirt":
+            color = FIRE_SKIRT if char < 0.5 else FIRE_ASH
+            width = max(1, min(3, int(float(sh.get("r", 0.3)) * 8)))
+            a = int(200 * visibility)
+        else:
+            color = FIRE_HOT
+            width = max(1, min(4, int(float(sh.get("r", 0.3)) * 10)))
+            a = int(230 * visibility)
+        if birth > 0.2:
+            a = min(255, a + int(birth * 50))
+        gdraw.line((p, tip), fill=(255, 80, 20, max(20, a // 2)), width=width + 2)
+        cdraw.line((p, tip), fill=(*color, a), width=width)
+        rr = max(1, int(float(sh.get("r", 0.2)) * (PLOT_W * 0.5 / 8.5) * 0.35))
+        cdraw.ellipse((p[0] - rr, p[1] - rr, p[0] + rr, p[1] + rr), fill=(*color, a))
+
+    image.alpha_composite(glow.filter(ImageFilter.GaussianBlur(1)))
+    image.alpha_composite(core)
+
+    draw = ImageDraw.Draw(image)
+    o = pyre_world_to_screen(origin[0], origin[1], cx, cz)
+    c = pyre_world_to_screen(cx, cz, cx, cz)
+    draw.ellipse((o[0] - 5, o[1] - 5, o[0] + 5, o[1] + 5), fill=(255, 154, 60, 220))
+    if open_amt > 0.05:
+        draw.ellipse((c[0] - 4, c[1] - 4, c[0] + 4, c[1] + 4), fill=(255, 240, 189, int(200 * fade)))
+
+    if phase == "Impact":
+        age_i = t - travel_end
+        flash = max(0.0, 0.4 - age_i * 1.2)
+        if flash > 0.0:
+            veil_flash, _ = alpha_layer()
+            ImageDraw.Draw(veil_flash).rectangle(
+                (PLOT_X, PLOT_Y, PLOT_X + PLOT_W, PLOT_Y + PLOT_H),
+                fill=(255, 160, 60, int(flash * 180)),
+            )
+            image.alpha_composite(veil_flash)
+
+    progress = 0.0 if total <= 0 else clamp(t / total, 0.0, 1.0)
+    bar_x0, bar_y0, bar_x1 = 120, 600, 1160
+    draw.rounded_rectangle((bar_x0, bar_y0, bar_x1, bar_y0 + 8), radius=4, fill=(40, 16, 8, 220))
+    fill_x = bar_x0 + (bar_x1 - bar_x0) * progress
+    draw.rounded_rectangle((bar_x0, bar_y0, fill_x, bar_y0 + 8), radius=4, fill=(*FIRE_EDGE, 230))
+    for boundary, _tag in ((travel_end, "BLOOM"), (fade_start, "FADE")):
+        if total > 0:
+            bx = bar_x0 + (bar_x1 - bar_x0) * (boundary / total)
+            draw.line((bx, bar_y0 - 2, bx, bar_y0 + 10), fill=(255, 180, 100, 200), width=1)
+
+    meta = (
+        f"t={t:5.2f}s   open={open_amt:4.2f}   "
+        f"cool={float(frame.get('cool', 0)):4.2f}   "
+        f"blades={len(frame.get('blades', []))}"
+    )
+    draw.text((120, 575), meta, font=FONT_TINY, fill=(210, 140, 80))
+    return image.convert("RGB")
+
+
+def encode_pyre_mp4(frames, dump, bounds, output: Path) -> None:
+    command = [
+        "ffmpeg", "-y", "-f", "rawvideo", "-vcodec", "rawvideo",
+        "-pix_fmt", "rgb24", "-s", f"{WIDTH}x{HEIGHT}", "-r", str(FPS),
+        "-i", "-", "-an", "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+        "-profile:v", "high", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+        str(output),
+    ]
+    with subprocess.Popen(command, stdin=subprocess.PIPE) as process:
+        assert process.stdin is not None
+        for i, frame in enumerate(frames):
+            if i % FPS == 0:
+                print(f"pyre_crown: frame {i:03d}/{len(frames)}")
+            pixels = np.asarray(pyre_frame(frame, dump, bounds), dtype=np.uint8)
+            process.stdin.write(pixels.tobytes())
+        process.stdin.close()
+        if process.wait() != 0:
+            raise RuntimeError("ffmpeg failed while encoding pyre_crown.mp4")
+    print(f"{output}: {output.stat().st_size:,} bytes")
+
+
+def render_pyre(output: Path, dump_path: Path, regen: bool) -> None:
+    dump = load_pyre_dump(dump_path, regen)
+    frames = dump["frames"]
+    bounds = pyre_phase_boundaries(frames)
+    print(
+        f"pyre dump: {len(frames)} frames, "
+        f"total={dump['total_duration']:.2f}s, zone_r={dump['zone_radius']:.2f}m"
+    )
+    mp4 = output / "pyre_crown.mp4"
+    encode_pyre_mp4(frames, dump, bounds, mp4)
+    encode_gif(mp4, output / "pyre_crown.gif")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--ability", choices=("frost", "storm", "cinder", "nova", "snare", "glacial", "all"), default="glacial",
-                        help="which cinematic card to render (default: glacial)")
+    parser.add_argument("--ability", choices=("frost", "storm", "cinder", "nova", "snare", "glacial", "pyre", "all"), default="pyre",
+                        help="which cinematic card to render (default: pyre)")
     parser.add_argument("--output", type=Path, default=HERE)
     parser.add_argument("--dump", type=Path, default=None,
                         help="override dump path (defaults per ability)")
@@ -1771,7 +2052,7 @@ def main() -> None:
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
 
-    abilities = ["frost", "storm", "cinder", "nova", "snare", "glacial"] if args.ability == "all" else [args.ability]
+    abilities = ["frost", "storm", "cinder", "nova", "snare", "glacial", "pyre"] if args.ability == "all" else [args.ability]
     for ability in abilities:
         if ability == "frost":
             dump = args.dump or (HERE / "frost_lance_frames.json")
@@ -1788,9 +2069,12 @@ def main() -> None:
         elif ability == "snare":
             dump = args.dump or (HERE / "voltaic_snare_frames.json")
             render_snare(args.output, dump, args.regen)
-        else:
+        elif ability == "glacial":
             dump = args.dump or (HERE / "glacial_crown_frames.json")
             render_glacial(args.output, dump, args.regen)
+        else:
+            dump = args.dump or (HERE / "pyre_crown_frames.json")
+            render_pyre(args.output, dump, args.regen)
 
 
 if __name__ == "__main__":
