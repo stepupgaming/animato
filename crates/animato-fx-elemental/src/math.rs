@@ -93,6 +93,17 @@ pub fn hash11(p: f32) -> f32 {
     fract(p)
 }
 
+
+/// Smoothstep cubic in/out: `4t³` then `1 - (-2t+2)³/2` (`Easing.inOutCubic`).
+#[inline]
+pub fn in_out_cubic(t: f32) -> f32 {
+    if t < 0.5 {
+        4.0 * t * t * t
+    } else {
+        1.0 - libm::powf(-2.0 * t + 2.0, 3.0) / 2.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -109,8 +120,11 @@ mod tests {
         assert_eq!(out_quint(1.0), 1.0);
         assert_eq!(out_expo(0.0), 0.0);
         assert_eq!(out_expo(1.0), 1.0);
+        assert_eq!(in_out_cubic(0.0), 0.0);
+        assert_eq!(in_out_cubic(1.0), 1.0);
         assert!((out_quad(0.5) - 0.75).abs() < 1e-6);
         assert!((out_quint(0.5) - 0.96875).abs() < 1e-5);
+        assert!((in_out_cubic(0.5) - 0.5).abs() < 1e-6);
     }
 
     #[test]

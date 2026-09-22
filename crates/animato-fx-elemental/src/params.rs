@@ -1683,6 +1683,348 @@ impl crate::aim::ZoneAimReach for PyreCrownParams {
 }
 
 
+
+/// Hard ceiling on kraken arms (matches `MAX_ARMS` in `KrakenAbility.js`).
+pub const MAX_KRAKEN_ARMS: usize = 26;
+
+/// Procedural parameters for the Kraken Crown far-cast (Ext).
+///
+/// Mirrors the `kraken` block of LinearAbilityExtThreeJS `settings.js`. Only
+/// CPU-resolved dimensions are carried — colours / particle rates /
+/// material-shader tuning stay GLSL downstream. Metres that scale under
+/// `zone_radius` are stored as **unit fractions** and multiplied by the live
+/// footprint at sample time, so editing `zone_radius` on a standing crown
+/// reshapes it with the clock stopped (arm length derives from
+/// `reach · (π/2) · R`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct KrakenCrownParams {
+    // ── the cast ──
+    /// Maximum cast distance, metres.
+    pub range: f32,
+    /// Casts nearer than this are refused (`0` = plant underfoot is legal).
+    pub min_range: f32,
+    /// Footprint the circle indicator measures out, metres.
+    pub zone_radius: f32,
+    /// How fast the wet surge races to the point, metres/second.
+    pub speed: f32,
+    /// Seconds the rift takes to tear out to the boundary.
+    pub open_time: f32,
+    /// Seconds the arms stand and hammer (impact phase).
+    pub lifetime: f32,
+    /// Seconds after `lifetime` before arms are pulled back.
+    pub withdraw_delay: f32,
+    /// Seconds one arm takes to go under.
+    pub withdraw_time: f32,
+    /// Seconds of random delay between neighbours during withdrawal.
+    pub withdraw_stagger: f32,
+    /// How far the arm settles into the rift as it goes, metres.
+    pub withdraw_sink: f32,
+    /// Seconds before the ability can be armed again.
+    pub cooldown: f32,
+    /// Global speed multiplier (`settings.global.speed`).
+    pub speed_scale: f32,
+    /// Global randomness multiplier (`settings.global.randomness`).
+    pub randomness: f32,
+
+    // ── hand origin ──
+    /// Metres above the floor at the hand.
+    pub hand_height: f32,
+    /// Metres in front of the caster.
+    pub hand_forward: f32,
+    /// Metres to the side (+ follows the cast `side`).
+    pub hand_side: f32,
+
+    // ── how the ring is filled ──
+    /// Heavy limbs on the boundary.
+    pub arm_count: f32,
+    /// Thin cords lashing between them.
+    pub whip_count: f32,
+    /// Multiplier on both counts (capped at [`MAX_KRAKEN_ARMS`]).
+    pub density: f32,
+    /// Where the heavy arms come up, × `zone_radius`.
+    pub ring_seat: f32,
+    /// Radial jitter on that seat, × `zone_radius`.
+    pub ring_scatter: f32,
+    /// Where the whips come up, × `zone_radius`.
+    pub whip_seat: f32,
+    /// Radial jitter on whip seat, × `zone_radius`.
+    pub whip_scatter: f32,
+
+    // ── the arm ──
+    /// Multiplier on the arc length that lands the tip on centre.
+    pub reach: f32,
+    /// Length jitter strength.
+    pub length_jitter: f32,
+    /// Radius where the arm leaves the rift, metres.
+    pub thickness: f32,
+    /// Thickness jitter strength.
+    pub thickness_jitter: f32,
+    /// Whip length as a fraction of an arm's.
+    pub whip_length: f32,
+    /// Whip thickness as a fraction of an arm's.
+    pub whip_thickness: f32,
+    /// Radians a strike is aimed off the radius, ±.
+    pub splay: f32,
+
+    // ── tube bake key (renderer geometry) ──
+    /// Cross-sections up the arm.
+    pub rings: f32,
+    /// Vertices around one cross-section.
+    pub sides: f32,
+    /// Radius at the point, × the base.
+    pub taper: f32,
+    /// Mid-muscle swell, × the cone profile.
+    pub swell: f32,
+    /// Where that swell sits, `0..1`.
+    pub swell_at: f32,
+    /// Muscle segmentation up the length.
+    pub arm_roughness: f32,
+    /// Cross-section flattening across the sucker face.
+    pub flatten: f32,
+
+    // ── poses (radians of total turn) ──
+    /// Coil lean on emergence.
+    pub coil_lean: f32,
+    /// Coil curl on emergence.
+    pub coil_curl: f32,
+    /// Idle lean (negative = out over the floor).
+    pub idle_lean: f32,
+    /// Idle curl.
+    pub idle_curl: f32,
+    /// Rear lean while cocked.
+    pub rear_lean: f32,
+    /// Rear curl while cocked.
+    pub rear_curl: f32,
+    /// Strike turn that lands the tip on the middle (`π`).
+    pub strike_turn: f32,
+    /// Extra one-sided turn jitter.
+    pub turn_jitter: f32,
+    /// How much the arm thickens as it whips, × radius.
+    pub strike_squash: f32,
+    /// Radians of ring-out after landing.
+    pub settle: f32,
+    /// How fast that ringing beats.
+    pub settle_speed: f32,
+
+    // ── travelling wave ──
+    /// Wave amplitude at rest.
+    pub wave_idle: f32,
+    /// Wave amplitude while cocked.
+    pub wave_rear: f32,
+    /// Wave amplitude during the whip.
+    pub wave_strike: f32,
+    /// Wave amplitude while emerging.
+    pub wave_coil: f32,
+    /// Waves along the arm.
+    pub wave_freq: f32,
+    /// Wave travel, revolutions/second.
+    pub wave_speed: f32,
+    /// Section roll from rift to tip, radians.
+    pub twist: f32,
+
+    // ── the beat ──
+    /// Seconds from first of it out to uncoiled.
+    pub rise_time: f32,
+    /// Seconds the wave of arms takes to run around the ring.
+    pub sweep_time: f32,
+    /// Seconds of random delay on top of that.
+    pub stagger: f32,
+    /// Seconds the thin cords come up behind the heavy arms.
+    pub whip_delay: f32,
+    /// Seconds between one arm's strikes.
+    pub smash_period: f32,
+    /// × smash_period for the whips.
+    pub whip_period: f32,
+    /// Fraction of a period the ring is scattered over.
+    pub cycle_scatter: f32,
+    /// Seconds spent winding up.
+    pub rear_time: f32,
+    /// Seconds the whip itself takes.
+    pub strike_time: f32,
+    /// Seconds pressed against the floor.
+    pub hold_time: f32,
+    /// Seconds lifting back off it.
+    pub peel_time: f32,
+    /// Seconds before the end that every arm lands together.
+    pub finale_lead: f32,
+
+    // ── rift + brine veil ──
+    /// Thickness of the band at the edge, metres.
+    pub field_boundary: f32,
+    /// Hover distance above the floor, metres.
+    pub field_height: f32,
+    /// Master opacity of the spray curtain, `0` hides it.
+    pub veil: f32,
+    /// How high the curtain stands, metres.
+    pub veil_height: f32,
+    /// Where it stands, × `zone_radius`.
+    pub veil_radius: f32,
+    /// Revolutions/second the whole curtain turns.
+    pub veil_spin: f32,
+
+    // ── smash / light ──
+    /// × smash feedback for a whip's landing.
+    pub whip_power: f32,
+    /// × smash feedback for the synchronised finale.
+    pub finale_power: f32,
+    /// Base intensity of the cast light.
+    pub light_intensity: f32,
+    /// Radius of the cast light, metres.
+    pub light_radius: f32,
+    /// Metres above the floor for the standing light.
+    pub light_height: f32,
+}
+
+impl Default for KrakenCrownParams {
+    fn default() -> Self {
+        Self {
+            range: 18.0,
+            min_range: 0.0,
+            zone_radius: 4.6,
+            speed: 42.0,
+            open_time: 0.3,
+            lifetime: 5.5,
+            withdraw_delay: 0.35,
+            withdraw_time: 0.85,
+            withdraw_stagger: 0.4,
+            withdraw_sink: 0.8,
+            cooldown: 2.2,
+            speed_scale: 1.0,
+            randomness: 1.0,
+
+            hand_height: 1.22,
+            hand_forward: 0.6,
+            hand_side: 0.18,
+
+            arm_count: 9.0,
+            whip_count: 12.0,
+            density: 1.0,
+            ring_seat: 0.97,
+            ring_scatter: 0.06,
+            whip_seat: 1.05,
+            whip_scatter: 0.14,
+
+            reach: 1.06,
+            length_jitter: 0.12,
+            thickness: 0.4,
+            thickness_jitter: 0.22,
+            whip_length: 0.72,
+            whip_thickness: 0.42,
+            splay: 0.32,
+
+            rings: 44.0,
+            sides: 12.0,
+            taper: 0.05,
+            swell: 1.32,
+            swell_at: 0.17,
+            arm_roughness: 0.15,
+            flatten: 0.85,
+
+            coil_lean: 0.2,
+            coil_curl: 5.4,
+            idle_lean: -0.7,
+            idle_curl: 2.4,
+            rear_lean: -1.3,
+            rear_curl: 1.6,
+            strike_turn: core::f32::consts::PI,
+            turn_jitter: 0.09,
+            strike_squash: 0.35,
+            settle: 0.22,
+            settle_speed: 26.0,
+
+            wave_idle: 0.55,
+            wave_rear: 0.3,
+            wave_strike: 0.04,
+            wave_coil: 0.8,
+            wave_freq: 1.15,
+            wave_speed: 0.55,
+            twist: 0.9,
+
+            rise_time: 0.45,
+            sweep_time: 0.7,
+            stagger: 0.14,
+            whip_delay: 0.12,
+            smash_period: 1.35,
+            whip_period: 0.62,
+            cycle_scatter: 0.85,
+            rear_time: 0.38,
+            strike_time: 0.19,
+            hold_time: 0.22,
+            peel_time: 0.45,
+            finale_lead: 0.75,
+
+            field_boundary: 0.5,
+            field_height: 0.03,
+            veil: 0.55,
+            veil_height: 1.6,
+            veil_radius: 1.0,
+            veil_spin: 0.05,
+
+            whip_power: 0.42,
+            finale_power: 1.7,
+            light_intensity: 14.0,
+            light_radius: 16.0,
+            light_height: 0.9,
+        }
+    }
+}
+
+impl KrakenCrownParams {
+    /// Live footprint, metres (`max(0.05, zone_radius)`).
+    pub fn radius(&self) -> f32 {
+        self.zone_radius.max(0.05)
+    }
+
+    /// Arm + whip budget capped at [`MAX_KRAKEN_ARMS`].
+    pub fn arm_budget(&self) -> (usize, usize) {
+        let density = self.density.max(0.05);
+        let arms = libm::roundf(self.arm_count * density).max(1.0) as usize;
+        let whips = libm::roundf(self.whip_count * density).max(0.0) as usize;
+        let wanted = (arms + whips).min(MAX_KRAKEN_ARMS);
+        let arm_count = arms.min(wanted);
+        let whip_count = wanted - arm_count;
+        (arm_count, whip_count)
+    }
+
+    /// Total instances for one cast.
+    pub fn total_budget(&self) -> usize {
+        let (a, w) = self.arm_budget();
+        a + w
+    }
+
+    /// Seconds the rift takes to tear open (`max(0.02, open_time)`).
+    pub fn open_duration(&self) -> f32 {
+        self.open_time.max(0.02)
+    }
+
+    /// Seconds the arms hammer (`max(0.6, lifetime)`).
+    pub fn impact_duration(&self) -> f32 {
+        self.lifetime.max(0.6)
+    }
+
+    /// Withdrawal: delay + time + stagger (`max(0.2, …)`).
+    pub fn fade_duration(&self) -> f32 {
+        (self.withdraw_delay + self.withdraw_time + self.withdraw_stagger).max(0.2)
+    }
+}
+
+impl crate::aim::AimReach for KrakenCrownParams {
+    fn cast_range(&self) -> f32 {
+        self.range
+    }
+
+    fn cast_min_range(&self) -> f32 {
+        self.min_range
+    }
+}
+
+impl crate::aim::ZoneAimReach for KrakenCrownParams {
+    fn zone_radius(&self) -> f32 {
+        self.zone_radius
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1999,6 +2341,61 @@ mod tests {
         };
         assert_eq!(flat.snap_duration(), 0.02);
         assert_eq!(flat.impact_duration(), 0.2);
+        assert_eq!(flat.fade_duration(), 0.2);
+    }
+
+    #[test]
+    fn kraken_defaults_match_shipped_settings() {
+        let p = KrakenCrownParams::default();
+        assert_eq!(p.range, 18.0);
+        assert_eq!(p.min_range, 0.0);
+        assert_eq!(p.zone_radius, 4.6);
+        assert_eq!(p.speed, 42.0);
+        assert_eq!(p.open_time, 0.3);
+        assert_eq!(p.lifetime, 5.5);
+        assert_eq!(p.withdraw_delay, 0.35);
+        assert_eq!(p.withdraw_time, 0.85);
+        assert_eq!(p.withdraw_stagger, 0.4);
+        assert_eq!(p.arm_count, 9.0);
+        assert_eq!(p.whip_count, 12.0);
+        assert_eq!(p.density, 1.0);
+        assert_eq!(p.reach, 1.06);
+        assert_eq!(p.thickness, 0.4);
+        assert!((p.strike_turn - core::f32::consts::PI).abs() < 1e-4);
+        assert_eq!(p.smash_period, 1.35);
+        assert_eq!(p.finale_lead, 0.75);
+        assert_eq!(p.veil, 0.55);
+        assert_eq!(p.light_intensity, 14.0);
+        assert_eq!(p.total_budget(), 21);
+        let (a, w) = p.arm_budget();
+        assert_eq!(a, 9);
+        assert_eq!(w, 12);
+    }
+
+    #[test]
+    fn kraken_budgets_and_floors() {
+        let mut p = KrakenCrownParams::default();
+        p.arm_count = 100.0;
+        p.whip_count = 100.0;
+        assert_eq!(p.total_budget(), MAX_KRAKEN_ARMS);
+        p.arm_count = 0.0;
+        p.whip_count = 0.0;
+        p.density = 1.0;
+        assert_eq!(p.total_budget(), 1);
+        let p = KrakenCrownParams::default();
+        assert!((p.open_duration() - 0.3).abs() < f32::EPSILON);
+        assert!((p.impact_duration() - 5.5).abs() < f32::EPSILON);
+        assert!((p.fade_duration() - 1.6).abs() < f32::EPSILON);
+        let flat = KrakenCrownParams {
+            open_time: 0.0,
+            lifetime: 0.0,
+            withdraw_delay: 0.0,
+            withdraw_time: 0.0,
+            withdraw_stagger: 0.0,
+            ..KrakenCrownParams::default()
+        };
+        assert_eq!(flat.open_duration(), 0.02);
+        assert_eq!(flat.impact_duration(), 0.6);
         assert_eq!(flat.fade_duration(), 0.2);
     }
 

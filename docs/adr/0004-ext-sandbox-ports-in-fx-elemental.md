@@ -46,3 +46,12 @@ stay lean either way.
   not a new crate proposal.
 - A dedicated Ext crate remains reserved for a future case where Ext needs a
   materially different stack — not invented preemptively.
+
+## Follow-up (2026-09-21) — Kraken Crown in-crate
+
+**Kraken Crown (E)** from the same Ext sandbox is now in-crate alongside Pyre
+Crown: `kraken.rs` / `krakencrown.rs` + `KrakenCrownParams`, `ELEMENT_META`
+`CastShape.ZONE` / label `Kraken Crown` / key `E`, reusing `solve_zone_aim`.
+Same attribution and dice-only / seekable contract as Pyre; identity lives in
+the *motion* (rolling strike cycles + synchronised finale) rather than a
+static bloom material.

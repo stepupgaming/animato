@@ -1,6 +1,6 @@
 # Attribution — elemental VFX source
 
-`animato-fx-elemental` ports the **Frost Lance (Q)**, **Storm Lance (E)**, **Cinder Fall (R)**, **Nova Beam (F)**, **Voltaic Snare (V)** and **Glacial Crown (X)** ability pipelines from LinearAbilityCastingThreeJS, and the Ext **Pyre Crown (Q)** pipeline from LinearAbilityExtThreeJS:
+`animato-fx-elemental` ports the **Frost Lance (Q)**, **Storm Lance (E)**, **Cinder Fall (R)**, **Nova Beam (F)**, **Voltaic Snare (V)** and **Glacial Crown (X)** ability pipelines from LinearAbilityCastingThreeJS, and the Ext **Pyre Crown (Q)** and **Kraken Crown (E)** pipelines from LinearAbilityExtThreeJS:
 
 - **Project:** [LinearAbiltyCastingThreeJS](https://github.com/achrefelouafi/LinearAbiltyCastingThreeJS)
   ("Elemental Sandbox" — a skillshot VFX sandbox built with Three.js, Vite
@@ -23,9 +23,11 @@ Only the intangible structure, re-expressed in renderer-agnostic Rust:
   Crown zone / ring / skirt / veil logic (`GlacierAbility.js` +
   `GlacierMaterial.js` / `FrostFieldMaterial.js`), Pyre Crown zone / ring /
   skirt / burn-out logic (`PyreAbility.js` + `PyreMaterial.js` /
-  `EmberFieldMaterial.js`), timing curves and the dice-only record rule;
-- the `ice`, `thunder`, `meteor`, `beam`, `snare`, `glacier` and Ext `pyre`
-  parameter-block defaults (`src/config/settings.js`);
+  `EmberFieldMaterial.js`), Kraken Crown zone / tentacle / rift / hammer
+  logic (`KrakenAbility.js` + `KrakenMaterial.js` / `AbyssFieldMaterial.js`),
+  timing curves and the dice-only record rule;
+- the `ice`, `thunder`, `meteor`, `beam`, `snare`, `glacier` and Ext `pyre` /
+  `kraken` parameter-block defaults (`src/config/settings.js`);
 - the aim-clamp / `minRange`-refusal rule and zone-cast circle solve (`src/input/AimController.js`);
 - the maths helpers (`src/utils/math.js`).
 

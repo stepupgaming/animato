@@ -17,20 +17,23 @@
 //!   ice ring / skirt crown (GlacierAbility ZONE port).
 //! - [`PyreCrown`] / [`PyreCrownParams`] — Pyre Crown (Q) far-cast fire ring /
 //!   skirt crown (Ext `PyreAbility` ZONE port).
+//! - [`KrakenCrown`] / [`KrakenCrownParams`] — Kraken Crown (E) far-cast abyss
+//!   rift / tentacle hammer (Ext `KrakenAbility` ZONE port).
 //! - Time-driven: `seek_abs` re-simulates deterministically, so every pipeline
 //!   is drivable by `animato_composition::Composition` and
 //!   `animato_timeline::Timeline::seek_abs` — including while paused, with
 //!   params edited live (records store dice only; metres resolve at sample
 //!   time).
-//! - All seven implement [`animato_core::Playable`] (`Send + 'static`).
+//! - All eight implement [`animato_core::Playable`] (`Send + 'static`).
 //!
 //! ## Quick Start
 //!
 //! ```rust
 //! use animato_fx_elemental::{
 //!     CinderFall, CinderFallParams, FrostLance, FrostLanceParams, GlacialCrown,
-//!     GlacialCrownParams, NovaBeam, NovaBeamParams, PyreCrown, PyreCrownParams,
-//!     StormLance, StormLanceParams, VoltaicSnare, VoltaicSnareParams,
+//!     GlacialCrownParams, KrakenCrown, KrakenCrownParams, NovaBeam,
+//!     NovaBeamParams, PyreCrown, PyreCrownParams, StormLance, StormLanceParams,
+//!     VoltaicSnare, VoltaicSnareParams,
 //! };
 //!
 //! let mut frost = FrostLance::with_params(FrostLanceParams::default());
@@ -67,6 +70,11 @@
 //! pyre.cast([0.0, 0.0], [0.0, 1.0], 12.0, 7).unwrap();
 //! pyre.seek_abs(0.6);
 //! assert!(!pyre.samples().is_empty());
+//!
+//! let mut kraken = KrakenCrown::with_params(KrakenCrownParams::default());
+//! kraken.cast([0.0, 0.0], [0.0, 1.0], 12.0, 7).unwrap();
+//! kraken.seek_abs(0.8);
+//! assert!(!kraken.samples().is_empty());
 //! ```
 //!
 //! ## Attribution
@@ -82,8 +90,9 @@
 //!
 //! Frost Lance, Storm Lance, Cinder Fall, Nova Beam, Voltaic Snare and
 //! Glacial Crown are in-crate (ZONE casts via [`solve_zone_aim`]) — completing
-//! the LinearAbilityCastingThreeJS ability set. Ext ports (Pyre Crown and
-//! later) stay additive in this same optional crate (ADR 0004); see README.
+//! the LinearAbilityCastingThreeJS ability set. Ext ports (Pyre Crown, Kraken
+//! Crown and later) stay additive in this same optional crate (ADR 0004); see
+//! README.
 //!
 //! The optional `wgpu` feature (`gpu.rs`) is an instance-layout stub only,
 //! not a renderer: the default build stays GPU-free. See the crate README
@@ -112,6 +121,8 @@ pub mod crown;
 pub mod glacial;
 pub mod pyre;
 pub mod pyrecrown;
+pub mod kraken;
+pub mod krakencrown;
 
 #[cfg(feature = "wgpu")]
 pub mod gpu;
@@ -124,9 +135,10 @@ pub use filament::{StrandNode, StrandRecord, StrandSample, roll_strands};
 pub use params::{
     CAGE_NODES, CinderFallParams, FISSURE_STEP, FrostLanceParams, GlacialCrownParams,
     IMPACT_FRACTION, MAX_CHUNKS, MAX_COILS, MAX_COLUMN, MAX_CROWN_SPIKES,
-    MAX_FISSURE_ARMS, MAX_FISSURE_BRANCHES, MAX_LEASH, MAX_PYRE_SPIKES, MAX_RIM,
-    MAX_RINGS, MAX_SPIKES, MAX_STRANDS, MAX_TENDRIL, NovaBeamParams, PyreCrownParams,
-    STRAND_NODES, StormLanceParams, TUBE_SEGMENTS, VoltaicSnareParams,
+    MAX_FISSURE_ARMS, MAX_FISSURE_BRANCHES, MAX_KRAKEN_ARMS, MAX_LEASH,
+    MAX_PYRE_SPIKES, MAX_RIM, MAX_RINGS, MAX_SPIKES, MAX_STRANDS, MAX_TENDRIL,
+    KrakenCrownParams, NovaBeamParams, PyreCrownParams, STRAND_NODES,
+    StormLanceParams, TUBE_SEGMENTS, VoltaicSnareParams,
 };
 pub use pipeline::{FrostEvent, FrostLance, FrostLight, Phase, SpawnError, SEEK_STEP};
 pub use rng::FxRng;
@@ -163,3 +175,12 @@ pub use pyre::{
     sample_pyre, schedule_pyre_eruption,
 };
 pub use pyrecrown::{PyreCrown, PyreEvent, PyreLight};
+pub use kraken::{
+    AbyssFieldSample, BrineVeilSample, KrakenPose, KrakenRecord, KrakenSample,
+    StrikeSchedule, TentacleRole, arm_delay, arm_length, arm_thickness,
+    bend_bearing, cycle_fit, cycle_period, kraken_angle_delta, roll_kraken,
+    sample_abyss_field, sample_brine_veil, sample_kraken, sample_tentacle,
+    seat_radius, solve_pose, strike_point, strike_schedule, strike_turn,
+    tick_arm_events,
+};
+pub use krakencrown::{KrakenCrown, KrakenEvent, KrakenLight};

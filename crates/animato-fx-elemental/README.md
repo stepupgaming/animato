@@ -4,7 +4,7 @@ Optional elemental-VFX edge crate for Animato (pure Rust, no browser /
 Three.js required): seekable, time-driven ports of **line-cast and zone-cast ability pipelines** —
 **Frost Lance (Q)**, **Storm Lance (E)**, **Cinder Fall (R)**, **Nova Beam (F)**, **Voltaic Snare (V)** and **Glacial Crown (X)** — from
 achrefelouafi's `LinearAbiltyCastingThreeJS` sandbox (MIT) — plus Ext
-**Pyre Crown (Q)** from `LinearAbilityExtThreeJS` (MIT).
+**Pyre Crown (Q)** and **Kraken Crown (E)** from `LinearAbilityExtThreeJS` (MIT).
 
 It contains no renderer: the pipeline resolves every spike transform, the
 fracture-front position, phase transitions and light state as plain data.
@@ -57,6 +57,9 @@ drive, and it ports without raymarching, ribbon strips or parametric tubes.
 | `src/abilities/PyreAbility.js` (Ext) — zone aim, fire-front travel, ring/skirt/core bloom, blaze + burn-out | `src/pyrecrown.rs` + `src/pyre.rs` | First **Ext ZONE** cast; pyre / ember-field / flame-veil / haze materials / particles stay renderer-owned; CPU samples expose blade transforms + field/veil/haze + `PyreEvent` + `PyreLight` |
 | `src/materials/PyreMaterial.js` / `EmberFieldMaterial.js` — combustion front, burn-down, crater, flame wall | `src/pyre.rs` (`pyre_emergence`, `ignition`, `char_amount`, `sample_ember_field`, `sample_flame_veil`) | Metres scale under live `zone_radius`; emergence is monotonic (no ice overshoot) |
 | `src/config/settings.js` — `pyre` block + `ELEMENT_META.pyre` (`CastShape.ZONE`, key Q) | `src/params.rs::PyreCrownParams` (`Default` = shipped values) | CPU-resolved dims only; colours / particle rates / heat haze stay GLSL downstream |
+| `src/abilities/KrakenAbility.js` (Ext) — zone aim, wet-surge travel, rift tear, tentacle hammer + finale + withdrawal | `src/krakencrown.rs` + `src/kraken.rs` | Second **Ext ZONE** cast; kraken / abyss-field / brine-veil materials / particles stay renderer-owned; CPU samples expose tentacle transforms + field/veil + `KrakenEvent` + `KrakenLight` |
+| `src/materials/KrakenMaterial.js` / `AbyssFieldMaterial.js` — bend pose, chromatophore wave, rift, brine curtain | `src/kraken.rs` (`solve_pose`, `strike_schedule`, `sample_abyss_field`, `sample_brine_veil`) | Metres scale under live `zone_radius`; arm length from `reach · (π/2) · R` |
+| `src/config/settings.js` — `kraken` block + `ELEMENT_META.kraken` (`CastShape.ZONE`, key E, label Kraken Crown) | `src/params.rs::KrakenCrownParams` (`Default` = shipped values) | CPU-resolved dims only; colours / particle rates / flesh shading stay GLSL downstream |
 
 
 ## Time model
@@ -65,7 +68,7 @@ drive, and it ports without raymarching, ribbon strips or parametric tubes.
 - `FrostLance::seek_abs(t)` / `StormLance::seek_abs(t)` /
   `CinderFall::seek_abs(t)` / `NovaBeam::seek_abs(t)` /
   `VoltaicSnare::seek_abs(t)` / `GlacialCrown::seek_abs(t)` /
-  `PyreCrown::seek_abs(t)` — deterministic
+  `PyreCrown::seek_abs(t)` / `KrakenCrown::seek_abs(t)` — deterministic
   re-simulation from spawn at a fixed 1/480 s step (`SEEK_STEP`): same
   `(seed, params, time)` ⇒ same state. Storm Lance additionally re-rolls
   filament shape from `seed + floor(age * restrike)` at sample time;
@@ -73,7 +76,7 @@ drive, and it ports without raymarching, ribbon strips or parametric tubes.
   polylines at sample time; Nova Beam resolves the parametric tube,
   shock-disc train and charge orb at sample time (with a first-class
   `Phase::Charge` before travel).
-- All seven implement `animato_core::{Playable, Update}` (`Send +
+- All eight implement `animato_core::{Playable, Update}` (`Send +
   'static`), so they compose directly:
 
 ```rust
@@ -106,7 +109,7 @@ GPU-free so `cargo test` needs no GPU. A full `wgpu` renderer backend
 See [ADR 0003](../../docs/adr/0003-optional-fx-elemental-crate.md) (extends
 ADR 0001 / 0002) and [ADR 0004](../../docs/adr/0004-ext-sandbox-ports-in-fx-elemental.md):
 why Frost Lance (Q) was the first ability, Casting follow-ups in-crate, Ext
-ports (Pyre Crown) staying additive in the same optional crate, the
+ports (Pyre Crown, Kraken Crown) staying additive in the same optional crate, the
 seekable/`Playable` contract, the renderer-owned split, and why the thin
 `wgpu` instance-layout stub is intentional.
 
@@ -122,7 +125,7 @@ parameter defaults, re-expressed in renderer-agnostic Rust.
 
 - The six LinearAbilityCastingThreeJS abilities (Frost / Storm / Cinder /
   Nova / Voltaic / Glacial) are now in-crate.
-- Ext **Pyre Crown (Q)** is in-crate (ADR 0004). Further Ext abilities
-  (Kraken / Electrical / …) stay additive in this crate.
+- Ext **Pyre Crown (Q)** and **Kraken Crown (E)** are in-crate (ADR 0004).
+  Further Ext abilities (Electrical / …) stay additive in this crate.
 - Full `wgpu` renderer backend (particles, decals, ice/pyre shading) behind the
   `wgpu` feature; default build stays GPU-free so `cargo test` needs no GPU.
